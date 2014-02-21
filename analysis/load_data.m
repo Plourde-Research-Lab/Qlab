@@ -6,7 +6,7 @@ function data = load_data(varargin)
 %   load_data(plotMode)
 %   load_data()
 %
-%   plotMode = 'real/imag', 'amp/phase', 'quad', or '' (no plot)
+%   plotMode = 'real', 'imag', 'amp', 'phase', 'real/imag', 'amp/phase', 'quad', or '' (no plot)
 if nargin == 2
     [fullpath, plotMode] = varargin{:};
     [pathname, filename] = fileparts(fullpath);
@@ -46,6 +46,11 @@ info = h5info(fullpath, '/');
 attributeNames = {info.Attributes.Name};
 assert(any(strcmp(attributeNames, 'version')) && h5readatt(fullpath, '/', 'version') == 2, 'Please use an old file loader');
 data.nbrDataSets = h5readatt(fullpath, '/', 'nbrDataSets');
+
+
+headerStr = h5read(fullpath, '/header');
+data.expSettings = json.load(headerStr{1});
+
 for ii = 1:data.nbrDataSets
     rawData = h5read(fullpath, ['/DataSet' num2str(ii) '/real']) + 1i * h5read(fullpath, ['/DataSet' num2str(ii) '/imag']);
     data.data{ii} = rawData;
@@ -82,6 +87,18 @@ plotMap.real = struct('label','Real Quad.', 'func', @real);
 plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
 
 switch plotMode
+    case 'real'
+        toPlot = {plotMap.real};
+        numRows = 1; numCols = 1;
+    case 'imag'
+        toPlot = {plotMap.imag};
+        numRows = 1; numCols = 1;
+    case 'amp'
+        toPlot = {plotMap.abs};
+        numRows = 1; numCols = 1;
+    case 'phase'
+        toPlot = {plotMap.phase};
+        numRows = 1; numCols = 1;
     case 'amp/phase'
         toPlot = {plotMap.abs, plotMap.phase};
         numRows = 2; numCols = 1;
