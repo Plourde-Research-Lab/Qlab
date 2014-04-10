@@ -31,7 +31,7 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
         function val = get.frequency(obj)
             gpib_string = ':freq:fixed?';
             temp = obj.query([gpib_string]);
-            val = str2double(temp);
+            val = str2double(temp) * 1e-9;
         end
         function val = get.power(obj)
             gpib_string = ':power?';
@@ -96,7 +96,7 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
         
         % property setters
         function obj = set.frequency(obj, value)
-            gpib_string = ':freq:fixed %d';
+            gpib_string = ':freq:fixed %d GHz';
 
             % Validate input
             if ~isnumeric(value)
@@ -104,7 +104,10 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             end
             
             gpib_string = sprintf(gpib_string, value);
+      
             obj.write(gpib_string);
+            obj.query('*OPC?');
+            pause(0.005);
         end
         function obj = set.power(obj, value)
             gpib_string = ':power %ddbm';

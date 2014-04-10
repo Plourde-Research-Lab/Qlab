@@ -1,29 +1,24 @@
-classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
+classdef (Sealed) HP83623A < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
     % Agilent N5183A microwave signal generator
     %
     %
     % Author(s): Blake Johnson/Regina Hain
-    % Generated on: Tues Nov 1 2010
+    % Generated on: Tues Nov 1 20107
     
     % Device properties correspond to instrument parameters
     properties (Access = public)
         output
-        frequency
-        power
-        phase
+        frequency % This is in GHz as of some crazy change.
+        power     % dB
+        phase    
         mod
         alc
         pulse
         pulseSource
-        IQ
-        IQ_Adjust
-        IQ_IOffset
-        IQ_QOffset
-        IQ_Skew
     end % end device properties
     
     methods
-        function obj = AgilentN5183A()
+        function obj = HP83623A()
             %obj = obj@deviceDrivers.lib.uWSource();
         end
         
@@ -35,14 +30,8 @@ classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib
         function val = get.power(obj)
             val = str2double(obj.query(':power?;'));
         end
-        function val = get.phase(obj)
-            val = str2double(obj.query(':phase?;'));
-        end
         function val = get.output(obj)
-            val = obj.query(':output?;');
-        end
-        function val = get.mod(obj)
-            val = obj.query(':output:mod?;');
+            val = obj.query(':POW:STAT?;');
         end
         function val = get.alc(obj)
             val = obj.query(':power:alc?;');
@@ -52,21 +41,6 @@ classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib
         end
         function val = get.pulseSource(obj)
             val = obj.query(':pulm:source?;');
-        end
-        function val = get.IQ(obj)
-            val = obj.query(':dm:state?;');
-        end
-        function val = get.IQ_Adjust(obj)
-            val = obj.query(':dm:IQAD?;');
-        end
-        function val = get.IQ_IOffset(obj)
-            val = str2double(obj.query(':dm:iqad:ioff?;'));
-        end
-        function val = get.IQ_QOffset(obj)
-            val = str2double(obj.query(':dm:iqad:qoff?;'));
-        end
-        function val = get.IQ_Skew(obj)
-            val = str2double(obj.query(':dm:iqad:qskew?;'));
         end
         
         % property setters
@@ -85,15 +59,7 @@ classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib
             obj.write(sprintf(':power %ddbm;', value));
         end
         function obj = set.output(obj, value)
-            obj.write([':output ' obj.cast_boolean(value) ';']);
-        end
-        % set phase in degrees
-        function obj = set.phase(obj, value)
-            assert(isnumeric(value), 'Requires numeric input');
-            obj.write(sprintf(':phase %dDEG;', value));
-        end
-        function obj = set.mod(obj, value)
-            obj.write([':output:mod ' obj.cast_boolean(value) ';']);
+            obj.write([':POW:STAT ' obj.cast_boolean(value) ';']);
         end
         function obj = set.alc(obj, value)
             obj.write([':power:alc ' obj.cast_boolean(value) ';']);
@@ -110,24 +76,6 @@ classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib
                 error('Invalid input');
             end
             obj.write([':pulm:source ' checkMapObj(value) ';']);
-        end
-        function obj = set.IQ(obj, value)
-            obj.write([':dm:state ' obj.cast_boolean(value) ';']);
-        end
-        function obj = set.IQ_Adjust(obj, value)
-            obj.write([':dm:IQAD ' obj.cast_boolean(value) ';']);
-        end
-        function obj = set.IQ_IOffset(obj, value)
-            assert(isnumeric(value), 'Requires numeric input');
-            obj.write(sprintf(':dm:iqad:ioff %d;', value));
-        end
-        function obj = set.IQ_QOffset(obj, value)
-            assert(isnumeric(value), 'Requires numeric input');
-            obj.write(sprintf(':dm:iqad:qoff %d;', value));
-        end
-        function obj = set.IQ_Skew(obj, value)
-            assert(isnumeric(value), 'Requires numeric input');
-            obj.write(sprintf(':dm:iqad:qskew %d;', value));
         end
                 
         function errs=check_errors(obj)

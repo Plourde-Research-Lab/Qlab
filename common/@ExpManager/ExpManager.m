@@ -213,6 +213,7 @@ classdef ExpManager < handle
                                 % we have a single point
                                 indexer = struct('type', '()', 'subs', {num2cell(ct)});
                                 obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
+%                                obj.data.(measName{1}).mean(1) = stepData.(measName{1});
                             end
                         end
                         plotResetFlag = all(ct == 1);
