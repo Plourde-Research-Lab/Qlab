@@ -3,7 +3,7 @@ function device = InstrumentFactory(name, instrSettings)
     %If we weren't passed settings then load from library
     if ~exist('instrSettings', 'var')
         %load the instrument library
-        instrLibrary = json.read(getpref('qlab', 'InstrumentLibraryFile'));
+        instrLibrary = json.read(getpref('qlab', 'CurInstrFile'));
 
         %Pull out the instrument settings dictionary
         instrSettings = instrLibrary.instrDict.(name);
