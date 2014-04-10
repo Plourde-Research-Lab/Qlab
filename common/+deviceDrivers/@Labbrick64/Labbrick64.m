@@ -27,7 +27,7 @@ classdef (Sealed) Labbrick64 < deviceDrivers.lib.uWSource
         hid
         open = 0;
         serialNum
-        model = 'LMS-103';
+        model = 'LMS-163';
     end
     
     % Device properties correspond to instrument parameters
@@ -55,8 +55,8 @@ classdef (Sealed) Labbrick64 < deviceDrivers.lib.uWSource
         
         max_power = 10; % dBm
         min_power = -40; % dBm
-        max_freq = 10; % GHz
-        min_freq = 4; % GHz
+        max_freq = 16; % GHz
+        min_freq = 8; % GHz
     end
     
     methods
