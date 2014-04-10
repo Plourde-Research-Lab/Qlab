@@ -104,7 +104,10 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             end
             
             gpib_string = sprintf(gpib_string, value);
+      
             obj.write(gpib_string);
+            obj.query('*OPC?');
+            pause(0.005);
         end
         function obj = set.power(obj, value)
             gpib_string = ':power %ddbm';
