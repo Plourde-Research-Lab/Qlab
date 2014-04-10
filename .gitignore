@@ -6,6 +6,8 @@
 *.pyc
 *.exe
 *.bit
+*.swp
+*~
 .DS_Store*
 Thumbs.db
 data/
