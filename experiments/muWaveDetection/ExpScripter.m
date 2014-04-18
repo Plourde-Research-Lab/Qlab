@@ -3,7 +3,7 @@ function ExpScripter(expName)
 
 exp = ExpManager();
 
-deviceName = 'IBM_PhaseII';
+deviceName = 'RoomTemp_cavity';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
@@ -55,5 +55,6 @@ end
 
 exp.init();
 exp.run();
+
 
 end

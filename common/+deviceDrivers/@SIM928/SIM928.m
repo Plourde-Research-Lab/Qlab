@@ -46,7 +46,6 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
         function obj = set.voltage(obj, value)
             cmd = sprintf('SNDT %d,"VOLT %d"',obj.channel,value);
             fprintf(g_sim928,cmd);
+        end
     end
-  
-
 end

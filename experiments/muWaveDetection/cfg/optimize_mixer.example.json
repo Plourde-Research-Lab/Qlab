@@ -3,7 +3,7 @@
 		"SpecAnalyzer1": {
 			"span": 100000,
 			"resolution_bw": 10000,
-			"sweep_points": 20,
+			"sweep_points": 600,
 			"sweep_mode": "single",
 			"video_averaging": 0
 		}

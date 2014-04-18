@@ -4,6 +4,11 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
     %
     % Author(s): Blake Johnson
     % Generated on: Tues Oct 19 2010
+    % 
+    % Edited by: Matthew Ware
+    % on: Wed Apr 16 2014
+    %
+    % Code copied verbatium for the Agilent N5183A driver
     
     % Device properties correspond to instrument parameters
     properties (Access = public)
