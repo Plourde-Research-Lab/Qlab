@@ -130,6 +130,9 @@ classdef MixerOptimizer < handle
             obj.sa.sweep();
             obj.sa.peakAmplitude();
             
+            % turn uwsource off
+            obj.uwsource.output = 0;
+            
             %Ask whether to write to file or not
             happy = questdlg('Are you happy with the result?','Optimize Mixer Wrap-up');
             switch happy
