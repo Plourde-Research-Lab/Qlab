@@ -21,7 +21,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 
-classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet
+classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet & deviceDrivers.lib.deviceDriverBase
     % HP8563E Spectrum analyser
     %
     %
@@ -54,6 +54,11 @@ classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet
         %    disconnect@deviceDrivers.lib.GPIBorEthernet(obj)
         %end
         % overwrite reset
+
+	% need to have a destructor
+	function delete(obj)
+	    obj.disconnect();
+	end
         function reset(obj)
             obj.write('IP;');
         end
@@ -74,13 +79,16 @@ classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet
         function val = get.resolution_bw(obj)
             val = str2double(obj.query('RB?;'));
         end
+	function val = sweep(obj)
+	% pass: not necessary for our generator.  For compatability.
+	end
         function val = peakAmplitude(obj)
             % move to the peak
-            err = str2double(obj.write('MKPK HI'));
-            if err
-                fprintf('Spectrum analyser error in moving to peak')
-                return
-            end
+            obj.write('MKPK HI;');
+            %if err
+            %    fprintf('Spectrum analyser error in moving to peak')
+            %    return
+            %end
             % get the peak amplitude
             val = str2double(obj.query('MKA?;'));
         end
@@ -91,11 +99,13 @@ classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet
         end
         function obj = set.centerFreq(obj, value)
             assert(isnumeric(value), 'Requires numeric input');
-            obj.write(sprintf('CF %fHZ;', value));
+            obj.write(sprintf('CF %fGHZ;', value));
         end
         function obj = set.resolution_bw(obj, value)
-            assert(isnumeric(value), 'Requires numeric input');
-            obj.write(sprintf('RB %fHZ;', value));
+            %assert(isnumeric(value), 'Requires numeric input');
+            %obj.write(sprintf('RB %fHZ;', value));
+	    % expect the keyword 'auto'
+	    obj.write(sprintf('RB %s;', value));
         end
         function obj = set.video_averaging(obj, value)
             assert(isnumeric(value), 'Requires numeric (bool) input [0,1]');
@@ -103,7 +113,7 @@ classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet
         end
         function obj = set.sweep_mode(obj, value)
             assert(ischar(value), 'Requires "single" of "contiuous"');
-            assert(strcmpi(value,'single') | strcmpi(value,'continuous'), 'Requires "single" of "contiuous"');
+            assert(strcmpi(value,'single') | strcmpi(value,'continuous') | strcmpi(value,'cont'), 'Requires "single" of "contiuous"');
             if strcmpi(value,'single')
                 obj.write('SNGLS;');
             else

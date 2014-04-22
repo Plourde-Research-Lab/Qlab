@@ -124,9 +124,9 @@ classdef MixerOptimizer < handle
             obj.sa.span = obj.expParams.SSBFreq * 2.2;
             obj.sa.sweep_mode = 'cont';
             obj.sa.resolution_bw = 'auto';
-            obj.sa.sweep_points = 800;
-            obj.sa.number_averages = 10;
-            obj.sa.video_averaging = 1;
+            %obj.sa.sweep_points = 600;
+            %obj.sa.number_averages = 10;
+            obj.sa.video_averaging = 0;
             obj.sa.sweep();
             obj.sa.peakAmplitude();
             
