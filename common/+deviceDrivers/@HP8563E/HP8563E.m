@@ -79,9 +79,9 @@ classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet & deviceDrivers.lib
         function val = get.resolution_bw(obj)
             val = str2double(obj.query('RB?;'));
         end
-	function val = sweep(obj)
-	% pass: not necessary for our generator.  For compatability.
-	end
+        function val = sweep(obj)
+        % pass: not necessary for our generator.  For compatability.
+        end
         function val = peakAmplitude(obj)
             % move to the peak
             obj.write('MKPK HI;');
@@ -102,10 +102,10 @@ classdef (Sealed) HP8563E < deviceDrivers.lib.GPIBorEthernet & deviceDrivers.lib
             obj.write(sprintf('CF %fGHZ;', value));
         end
         function obj = set.resolution_bw(obj, value)
-            %assert(isnumeric(value), 'Requires numeric input');
-            %obj.write(sprintf('RB %fHZ;', value));
+            assert(isnumeric(value), 'Requires numeric input');
+            obj.write(sprintf('RB %fHZ;', value));
 	    % expect the keyword 'auto'
-	    obj.write(sprintf('RB %s;', value));
+	    %obj.write(sprintf('RB %s;', value));
         end
         function obj = set.video_averaging(obj, value)
             assert(isnumeric(value), 'Requires numeric (bool) input [0,1]');
