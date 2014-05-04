@@ -1,9 +1,10 @@
-% Module Name : HP8563E.m
+% Module Name : SIM928.m
 %
 % Author/Date : Matthew Ware 04/14/14
 %
-% Description : Object to manage access to the HP8563E Spectrum
-% analyzer.
+% Description : Object to manage access to the Stanford SIM.  This is VERY
+% much a work in progress.  This does nothing more than send voltage 
+% commands to the sim channel 3.
 
 % Copyright 2014 Matthew Ware 
 %
@@ -25,27 +26,33 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
     properties (Access = public)
         output
         channel
-        voltage
+        value
     end % end device properties
     methods
         function obj = SIM928()
             obj.channel = 3; % default channel
         end
+        function reset(obj)
+            obj.write('SRST');
+            obj.write('*CLS');
+        end
+        
         % Instrument parameter accessors
         % getters
         function val = get.output(obj)
-            val = str2double(obj.query(':freq?;'))*1e-9; % convert to GHz
+            val = str2double(obj.query('SNDT %d,"EXON?"',obj.channel)); % convert to GHz
         end
         function val = get.channel(obj)
-            val = str2double(obj.query(':power?;'));
+            val = obj.channel;
         end
-        function val = get.voltage(obj)
-            val = obj.query(':POW:STAT?;');
+        function val = get.value(obj)
+            cmd = sprintf('SNDT %d,"VOLT?"',obj.channel);
+            val = obj.query(cmd);
         end
         % setters
-        function obj = set.voltage(obj, value)
-            cmd = sprintf('SNDT %d,"VOLT %d"',obj.channel,value);
-            fprintf(g_sim928,cmd);
+        function obj = set.value(obj, value)
+            cmd = sprintf('SNDT %d,"VOLT %d"',3,value);
+            obj.write(cmd);
         end
     end
 end
