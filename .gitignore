@@ -27,3 +27,7 @@ dist/
 *.prefs
 # sequence data files
 /experiments/muWaveDetection/sequences/*.txt
+# commonly changed files
+/experiments/mu	muWaveDetection/ExpScripter.m
+/experiments/mu	muWaveDetection/TrackedSpec.m
+/experiments/mu	muWaveDetection/calibratePulses.m
