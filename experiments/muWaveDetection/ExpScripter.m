@@ -11,6 +11,9 @@ instrSettings = expSettings.instruments;
 sweepSettings = expSettings.sweeps;
 measSettings = expSettings.measurements;
 
+% throw the experimental settings into the .h5 file header
+exp.dataFileHeader = expSettings;
+
 for instrument = fieldnames(instrSettings)'
     fprintf('Connecting to %s\n', instrument{1});
     instr = InstrumentFactory(instrument{1}, instrSettings.(instrument{1}));
