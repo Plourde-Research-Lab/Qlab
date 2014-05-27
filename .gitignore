@@ -28,6 +28,6 @@ dist/
 # sequence data files
 /experiments/muWaveDetection/sequences/*.txt
 # commonly changed files
-/experiments/mu	muWaveDetection/ExpScripter.m
-/experiments/mu	muWaveDetection/TrackedSpec.m
-/experiments/mu	muWaveDetection/calibratePulses.m
+/experiments/muWaveDetection/ExpScripter.m
+/experiments/muWaveDetection/TrackedSpec.m
+/experiments/muWaveDetection/calibratePulses.m
