@@ -199,6 +199,10 @@ classdef (Sealed) AgilentE8257D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             end
             
             gpib_string = [gpib_string checkMapObj(num2str(value))];
+            obj.write(gpib_string);           
+                        
+            % hard code 5us cavity pulse
+            gpib_string = sprintf('source:pulm:int:pwidth %d',5E-6);
             obj.write(gpib_string);
         end
         function obj = set.pulseSource(obj, value)
