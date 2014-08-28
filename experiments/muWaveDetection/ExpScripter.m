@@ -3,10 +3,22 @@ function ExpScripter(expName)
 
 exp = ExpManager();
 
-deviceName = 'CuTiN';
+deviceName = 'Al_08082014';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+% ignore a json saftey warning about the BBNAPS1-XXX naming convention
+% BBNAPS1-2m1 will be replaced with BBNAPS10x2D2m1
+warning('off','json:fieldNameConflict');
+% Sanitize chanParams to remove unnecessary meta information
+chanSettings = json.read(getpref('qlab','ChannelParamsFile'));
+chanSettings = rmfield(chanSettings,{'x__module__'; 'x__class__'});
+% We want to store the channel params in the expSettings json so we're
+% using the method found on stackoverflow to merge structs:
+% http://stackoverflow.com/questions/15245167/update-struct-via-another-struct-in-matlab
+names = [fieldnames(expSettings); fieldnames(chanSettings)];
+expSettings = cell2struct([struct2cell(expSettings); struct2cell(chanSettings)], names, 1);
+
 instrSettings = expSettings.instruments;
 sweepSettings = expSettings.sweeps;
 measSettings = expSettings.measurements;
