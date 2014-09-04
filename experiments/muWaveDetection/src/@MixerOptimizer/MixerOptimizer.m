@@ -123,12 +123,15 @@ classdef MixerOptimizer < handle
             obj.sa.centerFreq = obj.uwsource.frequency;
             obj.sa.span = obj.expParams.SSBFreq * 2.2;
             obj.sa.sweep_mode = 'cont';
-            obj.sa.resolution_bw = 'auto';
-            obj.sa.sweep_points = 800;
-            obj.sa.number_averages = 10;
-            obj.sa.video_averaging = 1;
+            %obj.sa.resolution_bw = '1000000';
+            %obj.sa.sweep_points = 600;
+            %obj.sa.number_averages = 10;
+            obj.sa.video_averaging = 0;
             obj.sa.sweep();
             obj.sa.peakAmplitude();
+            
+            % turn uwsource off
+            obj.uwsource.output = 0;
             
             %Ask whether to write to file or not
             happy = questdlg('Are you happy with the result?','Optimize Mixer Wrap-up');

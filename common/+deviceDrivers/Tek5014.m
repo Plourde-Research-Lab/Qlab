@@ -20,7 +20,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 
-classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
+classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet   
     
     properties (Access = public)
         samplingRate = 1e9
@@ -56,7 +56,7 @@ classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
             
             % set channel settings
             channelStrs = {'chan_1','chan_2','chan_3','chan_4'};
-            for ct = 1:2
+            for ct = 1:4
                 ch = channelStrs{ct};
                 if isfield(settings,ch)
                   obj.setAmplitude(ct, settings.(ch).amplitude);
@@ -145,9 +145,19 @@ classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
         function operationComplete(obj)
             val = 0;
             max_count = 3;
-            count = 1;
+            count = 1;            
             while ~(val == 1 || count > max_count)
-                val = str2double(obj.query('*OPC?'));
+                obj.write('*OPC?')
+                while 1
+                    str=obj.read();
+                    if isempty(str)
+                        fprintf('Waiting for op complete');
+                        continue;
+                    else
+                        val=str2double(str);
+                        break;
+                    end
+                end
                 count = count + 1;
             end
         end
@@ -166,8 +176,9 @@ classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
             end
             
             wfName = ['ch' num2str(ch)];
+
             switch (class(waveform))
-                case 'int16'
+                case {'int16', 'uint16'}
                     obj.sendWaveformInt(wfName, waveform, marker1, marker2)
                 case 'double'
                     obj.sendWaveformReal(wfName, waveform, marker1, marker2)
@@ -185,17 +196,13 @@ classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
             
             data = TekPattern.packPattern(waveform, marker1, marker2);
             
-            % pack waveform by separating waveform values into (low-8, high-8)
-            % sequential values, aka LSB format
-            bindata = zeros(2*length(data),1);
-            bindata(1:2:end) = bitand(data,255);
-            bindata(2:2:end) = bitshift(data,-8);
-            bindata = bindata';
-            
             % write
             obj.deleteWaveform(name);
             obj.createWaveform(name, length(waveform), 'integer');
-            obj.binblockwrite(bindata, [':wlist:waveform:data "' name '",']);
+            % Tek needs little endian order
+            obj.binblockwrite(swapbytes(data), 'uint16', [':wlist:waveform:data "' name '",']);
+            % TCPIP seems to need a newline after a binblockwrite
+            obj.write('\n');
         end
         
         function sendWaveformReal(obj, name, waveform, marker1, marker2)
@@ -233,6 +240,8 @@ classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
             obj.deleteWaveform(name);
             obj.createWaveform(name, 'real', length(waveform));
             obj.binblockwrite(binblock, [':wlist:waveform:data "' name '",']);
+            % TCPIP seems to need a newline after a binblockwrite
+            obj.write('\n');
         end
         
         function createWaveform(obj, name, size, type)
@@ -443,20 +452,22 @@ classdef Tek5014 < deviceDrivers.lib.GPIBorEthernet
             obj.write(['SEQuence:LENGth ', num2str(value)]);
         end
         
-        function setSeqloopCount(obj, value)
-            optionString = 'LoopCount';
-            
-            if (~isnumeric(value) || value > 65536 || value < 1)
-                error(['AWG Property: ', 'Invalid ', optionString, ' value: ', num2str(value)]);
-            end
-            gpib_string = ['SEQuence:ELEMent:LOOP:COUNt ', num2str(value)];
-            obj.write(gpib_string);
+        function setSeqloopCount(obj, seqct, value)
+            assert( value > 0 && value < 655536, 'Oops!');
+            obj.write('SEQuence:ELEMent%d:LOOP:COUNt %d', seqct, value);
         end
         
-        function setSeqWaveformName(obj, n, name)
-            gpib_string = ['SEQuence:ELEMent1:WAVeform', ...
-                num2str(n),' "', name, '"'];
-            obj.write(gpib_string);
+        function setSeqWaveformName(obj, seqct, ch, name)
+            obj.write('SEQuence:ELEMent%d:WAVeform%d "%s"', seqct, ch, name);
+        end
+        
+        function setSeqWait(obj, seqct, wait)
+            obj.write('SEQuence:ELEMent%d:TWait %d', seqct, logical(wait));
+        end
+        
+        function setSeqGoto(obj, seqct, idx)
+            obj.write('SEQuence:ELEMent%d:GOTO:STATE 1', seqct);
+            obj.write('SEQuence:ELEMent%d:GOTO:INDex %d', seqct, idx);
         end
     end
 end

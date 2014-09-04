@@ -1,9 +1,14 @@
-classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
+classdef (Sealed) AgilentE8257D < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
     % Agilent E8267D vector signal generator
     %
     %
     % Author(s): Blake Johnson
     % Generated on: Tues Oct 19 2010
+    % 
+    % Edited by: Matthew Ware
+    % on: Wed Apr 16 2014
+    %
+    % Code copied verbatium for the Agilent N5183A driver
     
     % Device properties correspond to instrument parameters
     properties (Access = public)
@@ -104,7 +109,10 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             end
             
             gpib_string = sprintf(gpib_string, value);
+      
             obj.write(gpib_string);
+            obj.query('*OPC?');
+            pause(0.005);
         end
         function obj = set.power(obj, value)
             gpib_string = ':power %ddbm';
@@ -126,11 +134,11 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             % Validate input
             checkMapObj = containers.Map({'on','1','off','0'},...
                 {'on','on','off','off'});
-            if not (checkMapObj.isKey( lower(value) ))
+            if not (checkMapObj.isKey( num2str(lower(value)) ))
                 error('Invalid input');
             end
             
-            gpib_string =[gpib_string checkMapObj(value)];
+            gpib_string =[gpib_string checkMapObj(num2str(value))];
             obj.write(gpib_string);
         end
         % set phase in degrees
@@ -154,11 +162,11 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             % Validate input
             checkMapObj = containers.Map({'on','1','off','0'},...
                 {'on','on','off','off'});
-            if not (checkMapObj.isKey( lower(value) ))
+            if not (checkMapObj.isKey( num2str(lower(value)) ))
                 error('Invalid input');
             end
             
-            gpib_string =[gpib_string checkMapObj(value)];
+            gpib_string =[gpib_string checkMapObj(num2str(value))];
             obj.write(gpib_string);
         end
         function obj = set.alc(obj, value)
@@ -168,13 +176,13 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             end
             
             % Validate input
-            checkMapObj = containers.Map({'on','1','off','0'},...
-                {'on','on','off','off'});
-            if not (checkMapObj.isKey( lower(value) ))
+            checkMapObj = containers.Map({'on','1','true','off','0','false'},...
+                {'on','on','on','off','off','off'});
+            if not (checkMapObj.isKey( num2str(lower(value)) ))
                 error('Invalid input');
             end
             
-            gpib_string =[gpib_string checkMapObj(value)];
+            gpib_string =[gpib_string checkMapObj(num2str(value))];
             obj.write(gpib_string);
         end
         function obj = set.pulse(obj, value)
@@ -186,12 +194,13 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             % Validate input
             checkMapObj = containers.Map({'on','1','off','0'},...
                 {'on','on','off','off'});
-            if not (checkMapObj.isKey( lower(value) ))
+            if not (checkMapObj.isKey( lower(num2str(value)) ))
                 error('Invalid input');
             end
             
-            gpib_string = [gpib_string checkMapObj(value)];
-            obj.write(gpib_string);
+            gpib_string = [gpib_string checkMapObj(num2str(value))];
+            obj.write(gpib_string);           
+                        
         end
         function obj = set.pulseSource(obj, value)
             gpib_string = ':pulm:source ';
@@ -203,7 +212,7 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
                 error('Invalid input');
             end
             
-            gpib_string = [gpib_string checkMapObj(value)];
+            gpib_string = [gpib_string checkMapObj(lower(value))];
             obj.write(gpib_string);
         end
         function obj = set.WBIQ(obj, value)
@@ -271,6 +280,28 @@ classdef (Sealed) AgilentE8267D < deviceDrivers.lib.uWSource & deviceDrivers.lib
             gpib_string = sprintf(gpib_string, value);
             obj.write(gpib_string);
         end
+        function errs=check_errors(obj)
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Check for errors
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+            first=1;
+            errs=[];
+            while 1
+                a=query(obj,'SYST:ERR?');
+                loc=find(a==',');
+                errflag=str2num(a(1:(loc-1)));
+                if errflag == 0
+                    break;
+                end
+                errs=[errs errflag];
+                if first
+                  fprintf('Error occured on E8267D\n')
+                  first=0;
+                end
+                fprintf('  -> "%s"\n',a);
+            end
+        end
+        
     end % end instrument parameter accessors
     
     

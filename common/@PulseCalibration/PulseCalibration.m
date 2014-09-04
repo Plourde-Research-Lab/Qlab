@@ -125,7 +125,7 @@ classdef PulseCalibration < handle
             % load ExpManager settings
             expSettings = json.read(obj.settings.cfgFile);
             instrSettings = expSettings.instruments;
-            obj.numShots = instrSettings.scope.averager.nbrRoundRobins * instrSettings.scope.averager.nbrWaveforms;
+            obj.numShots = instrSettings.Scope.averager.nbrRoundRobins * instrSettings.Scope.averager.nbrWaveforms;
             
             % add instruments
             for instrument = fieldnames(instrSettings)'

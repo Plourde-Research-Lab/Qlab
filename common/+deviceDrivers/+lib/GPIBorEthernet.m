@@ -65,6 +65,7 @@ classdef GPIBorEthernet < hgsetget
         function disconnect(obj)
             if ~isempty(obj.interface)
               flushoutput(obj.interface);
+              flushinput(obj.interface);              
               fclose(obj.interface);
               delete(obj.interface);
               obj.interface = [];
@@ -76,7 +77,7 @@ classdef GPIBorEthernet < hgsetget
         end
         
         function write(obj, varargin)
-            fprintf(obj.interface, varargin{:});
+            fprintf(obj.interface, sprintf(varargin{:}));
         end
         
         function val = query(obj, string)
