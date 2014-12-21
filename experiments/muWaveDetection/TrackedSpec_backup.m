@@ -5,7 +5,7 @@ import MeasFilters.*
 
 exp = ExpManager();
 
-deviceName = 'MW072';
+deviceName = 'MW064';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = jsonlab.loadjson(fullfile(getpref('qlab', 'cfgDir'), 'tracked_spec.json'));
@@ -23,9 +23,9 @@ end
 
 cavitySweepSettings = struct(...
     'genID', 'TopAgilentE8257D',...
-    'start', 8.3045,...
-    'stop', 8.3100,...
-    'step', 0.0002,...
+    'start', 8.7635,...
+    'stop', 8.7655,...
+    'step', 0.00001,...
     'offset', 0.0002);
 
 add_sweep(exp, 1, SweepFactory(sweepSettings.DC, exp.instruments), rebias_cavity_callback(cavitySweepSettings));
@@ -64,7 +64,6 @@ function fcn = rebias_cavity_callback(settings)
             ylabel('Phase');
         end
         % find cavity peak
-        data = sqrt(real(data).^2 + imag(data).^2);
         peak_freq = freqPts( find(abs(data) == min(abs(data)), 1) );
         fprintf('Found cavity frequency: %f GHz\n', peak_freq);
         exp.instruments.(genID).frequency = peak_freq + offset;

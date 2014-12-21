@@ -22,6 +22,8 @@ classdef NaiveIntegrator < MeasFilters.MeasFilter
         boxCarStart
         boxCarStop
         filter
+        IFfreq
+        bandwidth
         fileHandleReal
         fileHandleImag
         saveRecords
@@ -34,6 +36,8 @@ classdef NaiveIntegrator < MeasFilters.MeasFilter
             obj.samplingRate = settings.samplingRate;
             obj.boxCarStart = settings.boxCarStart;
             obj.boxCarStop = settings.boxCarStop;
+            obj.bandwidth = settings.bandwidth;
+            obj.IFfreq = settings.IFfreq;
             
             if isfield(settings, 'filterFilePath') && ~isempty(settings.filterFilePath)
                 obj.filter = load(settings.filterFilePath, 'filterCoeffs', 'bias');
@@ -59,12 +63,15 @@ classdef NaiveIntegrator < MeasFilters.MeasFilter
             import MeasFilters.*
             data = apply@MeasFilters.MeasFilter(obj, data);
 			% going to implement a blind copy of the run CQED code ..
-            %[demodSignal, decimFactor] = digitalDemod(data, obj.IFfreq, obj.bandwidth, obj.samplingRate);
-			signal = data;	
+            [demodSignal, decimFactor] = digitalDemod(data, obj.IFfreq, obj.bandwidth, obj.samplingRate);
+			signal = demodSignal;	
 			% define some filter constants
-			K = (1/obj.IFfreq)*(obj.samplingRate +1);
-			A(1:K) = 0; A(1)=1;
+			%K = (1/obj.IFfreq)*(obj.samplingRate +1);
+			K = length(signal);
+            A(1:K) = 0; A(1)=1;
 			B(1:K) = 1/K;
+            %run_QCED.filterCoeffs = [B];
+            %obj.filter = 'run_CQED';
 			
 			%Box car the demodulated signal
             if ndims(signal) == 2
@@ -89,21 +96,22 @@ classdef NaiveIntegrator < MeasFilters.MeasFilter
             else
                 error('Only able to handle 2 and 4 dimensional data.');
             end
-            signal = signal-mean(signal);
-			signal = signal - filter(B,A,signal);
-			time = (obj.boxCarStar:obj.boxCarStop)/obj.samplingRate;
-			COS = cos(2 * pi * time .* obj.IFfreq);
-			SIN = sin(2 * pi * time .* obj.IFfreq);
 
             %If we have a pre-defined filter use it, otherwise integrate
             %and rotate
             if ~isempty(obj.filter)
                 %obj.latestData = sum(bsxfun(@times, demodSignal, obj.filter.filterCoeffs')) + obj.filter.bias;
-                obj.latestData = dotFirstDim(signal, obj.filter.filterCoeffs);
+                %obj.latestData = dotFirstDim(signal, obj.filter.filterCoeffs);
+                obj.latestData = dotFirstDim(signal, single(B));
                 obj.latestData = obj.latestData + obj.filter.bias;
             else
                 %Integrate 
-				signal = sqrt(sum(COS.*data).^2 + sum(SIN.*data).^2);
+                signal = mean(signal);
+                signal = signal - filter(B,A,signal);
+                %time = (obj.boxCarStart:obj.boxCarStop)/obj.samplingRate;
+                %COS = cos(2 * pi * time .* obj.IFfreq);
+                %SIN = sin(2 * pi * time .* obj.IFfreq);
+				%signal = sqrt(sum(COS.*data).^2 + sum(SIN.*data).^2);
                 obj.latestData = mean(signal,1);
             end
             

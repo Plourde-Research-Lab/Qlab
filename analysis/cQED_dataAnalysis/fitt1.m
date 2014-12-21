@@ -8,6 +8,12 @@ if nargin < 2
     line = findall(h, 'Type', 'Line');
     xdata = get(line(1), 'xdata');
     ydata = get(line(1), 'ydata');
+    xnew = xdata(5:end);
+    ynew = ydata(5:end);
+    clear xdata ydata;
+    xdata = xnew;
+    ydata = ynew; 
+    
     % save figure title
     plotTitle = get(get(gca, 'Title'), 'String');
 else
