@@ -6,10 +6,8 @@ function continuousWave()
 %
 aps = deviceDrivers.APS();
 ag = deviceDrivers.AgilentN5183A();
-%att = deviceDrivers.DigitalAttenuator();
 
 ag.connect(12);
-%att.connect('COM5')
 aps.connect('A6001ixV');
 aps.stop();
 
@@ -37,11 +35,10 @@ aps.setEnabled(1, 1);
 
 aps.run()
 
-ag.frequency = 4.3;
+ag.frequency = 5.0;
 ag.power = 13.0;
 ag.output = 1;
 ag.pulse = 0;
-%att.setAttenuation(settings.(['3''30.0']));
 
 % wait for user input
 % headbutt keyboard
@@ -54,8 +51,5 @@ delete(ag);
 aps.stop();
 aps.disconnect();
 delete(aps);
-%att.setAttenuation(settings.(['3''0.0']));
-%att.disconnect()
-%delete(att)
 
 end
