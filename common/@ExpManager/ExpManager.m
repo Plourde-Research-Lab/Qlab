@@ -127,11 +127,14 @@ classdef ExpManager < handle
                     dataInfo.([xyz{xyzIdx}, 'points']) = points{ct};
                 end
                 dataInfo.dimension = length(obj.sweeps);
-                dataInfos = repmat({dataInfo}, 1, length(fieldnames(obj.measurements)));
                 % add measurement names to dataInfo structs
                 measNames = fieldnames(obj.measurements);
+                dataInfos = {};
                 for ct = 1:length(measNames)
-                    dataInfos{ct}.name = measNames{ct};
+                    if obj.measurements.(measNames{ct}).saved
+                        dataInfos{end+1} = dataInfo;
+                        dataInfos{end}.name = measNames{ct};
+                    end
                 end
                 %Open data file
                 obj.dataFileHandler.open(obj.dataFileHeader, dataInfos, obj.saveVariances);
@@ -139,11 +142,25 @@ classdef ExpManager < handle
             
         end
         
+        function connect_meas_to_source(obj, meas)
+            instrNames = fieldnames(obj.instruments);
+            %First look for an instrument (scope)
+            if (~isempty(find(strcmp(meas.dataSource, instrNames))))
+                obj.listeners{end+1} = addlistener(obj.instruments.(meas.dataSource), 'DataReady', @meas.apply);          
+            %Otherwise assume another measurement
+            else
+                obj.listeners{end+1} = addlistener(obj.measurements.(meas.dataSource), 'DataReady', @meas.apply);
+            end
+                
+        end
+        
         %Runner
         function run(obj)
-            %Connect measurment data to processing callbacks
-            obj.listeners{1} = addlistener(obj.scopes{1}, 'DataReady', @obj.process_data);
+            %Connect a polling scope plotter
             obj.plotScopeTimer = timer('TimerFcn', @obj.plot_scope_callback, 'StopFcn', @obj.plot_scope_callback, 'Period', 0.5, 'ExecutionMode', 'fixedSpacing');
+
+            %Connect measurement consumers to producers
+            structfun(@(x) obj.connect_meas_to_source(x), obj.measurements);
             
             %Set the cleanup function so that even if we ctrl-c out we
             %correctly cleanup
@@ -163,6 +180,8 @@ classdef ExpManager < handle
             % initialize data storage
             obj.data = structfun(@(x) struct('mean', complex(nan(sizes),nan(sizes)), 'realvar', nan(sizes), 'imagvar', nan(sizes), 'prodvar', nan(sizes)),...
                 obj.measurements, 'UniformOutput', false);
+            
+            fprintf('Taking data....\n');
             
             % generic nested loop sweeper through "stack"
             while idx > 0 && ct(1) <= stops(1)
@@ -195,6 +214,9 @@ classdef ExpManager < handle
                         stepData = structfun(@(m) m.get_data(), obj.measurements, 'UniformOutput', false);
                         stepVar = structfun(@(m) m.get_var(), obj.measurements, 'UniformOutput', false);
                         for measName = fieldnames(stepData)'
+                            if ~obj.measurements.(measName{1}).saved
+                                continue
+                            end
                             if isa(obj.sweeps{end}, 'sweeps.SegmentNum')
                                 % we are sweeping segment number, so we
                                 % have an entire row of data
@@ -236,6 +258,8 @@ classdef ExpManager < handle
         end
         
         function cleanUp(obj)
+            % stop the scopes
+            cellfun(@(scope) stop(scope), obj.scopes);
             % stop AWGs
             cellfun(@(awg) stop(awg), obj.AWGs);
             % stop plot timer and clear it
@@ -272,25 +296,22 @@ classdef ExpManager < handle
             end
         end
         
-        %Helper function to apply measurement filters and store data
-        function process_data(obj, src, ~)
-            % download data from src
-            measData = struct('ch1', src.transfer_waveform(1), 'ch2', src.transfer_waveform(2));
-            %Apply measurment filters in turn
-            structfun(@(m) apply(m, measData), obj.measurements, 'UniformOutput', false);
-        end
-        
         function save_data(obj, stepData, stepVar)
             if isempty(obj.dataFileHandler) || obj.dataFileHandler.fileOpen == 0
                 return
             end
             measNames = fieldnames(stepData)';
+            savect = 1;
             for ct = 1:length(measNames)
-                measData = squeeze(stepData.(measNames{ct}));
-                obj.dataFileHandler.write(measData, ct);
-                if obj.saveVariances
-                    obj.dataFileHandler.writevar(stepVar.(measNames{ct}), ct);
+                if ~obj.measurements.(measNames{ct}).saved
+                    continue
                 end
+                measData = squeeze(stepData.(measNames{ct}));
+                obj.dataFileHandler.write(measData, savect);
+                if obj.saveVariances
+                    obj.dataFileHandler.writevar(stepVar.(measNames{ct}), savect);
+                end
+                savect = savect + 1;
             end
         end
         
@@ -401,11 +422,13 @@ classdef ExpManager < handle
             end
             
             for measName = fieldnames(obj.measurements)'
-                if ~isfield(figHandles, measName{1}) || ~ishandle(figHandles.(measName{1}))
-                    figHandles.(measName{1}) = figure('WindowStyle', 'docked', 'HandleVisibility', 'callback', 'NumberTitle', 'off', 'Name', [measName{1} ' - Scope']);
+                if obj.measurements.(measName{1}).plotScope
+                    if ~isfield(figHandles, measName{1}) || ~ishandle(figHandles.(measName{1}))
+                        figHandles.(measName{1}) = figure('WindowStyle', 'docked', 'HandleVisibility', 'callback', 'NumberTitle', 'off', 'Name', [measName{1} ' - Scope']);
+                    end
+                    figHandle = figHandles.(measName{1});
+                    obj.measurements.(measName{1}).plot(figHandle);
                 end
-                figHandle = figHandles.(measName{1});
-                obj.measurements.(measName{1}).plot(figHandle);
             end
             drawnow()
         end

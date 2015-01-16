@@ -36,22 +36,29 @@ classdef PulseCalibration < handle
         function obj = PulseCalibration()
         end
 
-        function out = homodyneMeasurement(obj, segmentPoints)
+        function out = take_data(obj, segmentPoints)
             % runs the pulse sequence and returns the data
             
             % set number of segments in the sweep
             obj.experiment.sweeps{1}.points = segmentPoints;
 
             % set digitizer with the appropriate number of segments
-            averagerSettings = obj.experiment.scopes{1}.averager;
-            averagerSettings.nbrSegments = length(segmentPoints);
-            obj.experiment.scopes{1}.averager = averagerSettings;
+            switch class(obj.experiment.scopes{1})
+                case 'deviceDrivers.AlazarATS9870'
+                    averagerSettings = obj.experiment.scopes{1}.averager;
+                    averagerSettings.nbrSegments = length(segmentPoints);
+                    obj.experiment.scopes{1}.averager = averagerSettings;
+                case 'X6'
+                    x6 = obj.experiment.scopes{1};
+                    set_averager_settings(x6, x6.recordLength, length(segmentPoints), x6.nbrWaveforms, x6.nbrRoundRobins);
+                otherwise
+                    error('Unknown scope type.');
+            end
             
             obj.experiment.run();
             
-            % pull out data from the first measurement
-            measNames = fieldnames(obj.experiment.measurements);
-            data = obj.experiment.data.(measNames{1}).mean;
+            % pull out data from the specified
+            data = obj.experiment.data.(obj.settings.measurement).mean;
             
             % return amplitude or phase data
             switch obj.settings.dataType
@@ -125,7 +132,15 @@ classdef PulseCalibration < handle
             % load ExpManager settings
             expSettings = json.read(obj.settings.cfgFile);
             instrSettings = expSettings.instruments;
-            obj.numShots = instrSettings.Scope.averager.nbrRoundRobins * instrSettings.Scope.averager.nbrWaveforms;
+            instrNames = fieldnames(instrSettings);
+            ct = 0;
+            while (true)
+                ct = ct+1;
+                if strcmp(instrSettings.(instrNames{ct}).deviceName, 'AlazarATS9870') || strcmp(instrSettings.(instrNames{ct}).deviceName, 'X6')
+                    obj.numShots = instrSettings.(instrNames{ct}).averager.nbrRoundRobins * instrSettings.(instrNames{ct}).averager.nbrWaveforms;
+                    break;
+                end
+            end
             
             % add instruments
             for instrument = fieldnames(instrSettings)'
@@ -136,12 +151,20 @@ classdef PulseCalibration < handle
             % create a generic SegmentNum sweep
             add_sweep(obj.experiment, 1, sweeps.SegmentNum(struct('axisLabel', 'Segment', 'start', 0, 'step', 1, 'numPoints', 2)));
             
-            % add measurement M1
-            import MeasFilters.*
-            measSettings = expSettings.measurements;
-            dh = DigitalHomodyne(measSettings.(obj.settings.measurement));
-            add_measurement(obj.experiment, obj.settings.measurement, dh);
-            
+            % add the appropriate measurement stack
+            measSettings = expSettings.measurements.(obj.settings.measurement);
+            curSource = obj.settings.measurement;
+            curFilter = MeasFilters.(measSettings.filterType)(measSettings);
+            while (true)
+               add_measurement(obj.experiment, curSource, curFilter);
+               if isa(curFilter, 'MeasFilters.RawStream') || isa(curFilter, 'MeasFilters.StreamSelector')
+                   break;
+               end
+               sourceParams = expSettings.measurements.(curSource);
+               curFilter = MeasFilters.(sourceParams.filterType)(sourceParams);
+               curSource = sourceParams.dataSource;
+            end
+
             % intialize the ExpManager
             init(obj.experiment);
             
@@ -191,7 +214,7 @@ classdef PulseCalibration < handle
                 switch class(obj.AWGs.(awgNames{awgct}))
                     case 'deviceDrivers.Tek5014'
                         filenames{awgct} = fullfile(pathAWG, [basename '-' awgNames{awgct}, '.awg']);
-                    case 'deviceDrivers.APS'
+                    case {'deviceDrivers.APS', 'APS2'}
                         filenames{awgct} = fullfile(pathAWG, [basename '-' awgNames{awgct}, '.h5']);
                     otherwise
                         error('Unknown AWG type.');

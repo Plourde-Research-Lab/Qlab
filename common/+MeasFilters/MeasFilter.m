@@ -22,55 +22,44 @@
 classdef MeasFilter < handle
     
     properties
-        digitizer_name
-        channel
+        dataSource
         latestData
         accumulatedData
         accumulatedVar
         avgct = 0
         varct = 0
         scopeavgct = 0
-        childFilter
         plotScope = false
         scopeHandle
         plotMode = 'amp/phase' %allowed enums are 'amp/phase', 'real/imag', 'quad'
         axesHandles
         plotHandles
-        
+        saved = true
+    end
+    
+    events
+        DataReady
+    end
+
+    methods (Abstract)
+        %Consume a DataReady event
+        apply(obj, src, ~)
     end
     
     methods
-        function obj = MeasFilter(varargin)
-            % MeasFilter(filter, settings) or MeasFilter(settings)
-            if nargin == 1
-                settings = varargin{1};
-                obj.channel = sprintf('ch%d',settings.channel);
-                filter = [];
-            elseif nargin == 2
-                [filter, settings] = varargin{:};
-            end
+        function obj = MeasFilter(settings)
+            % MeasFilter(settings)
             if isfield(settings, 'plotScope')
                 obj.plotScope = settings.plotScope;
             end
             if isfield(settings, 'plotMode')
                 obj.plotMode = settings.plotMode;
             end
-            if isfield(settings,'digitizer_name')
-                obj.digitizer_name=settings.digitizer_name;
+            if isfield(settings, 'dataSource')
+                obj.dataSource = settings.dataSource;
             end
-            if ~isempty(filter)
-                obj.childFilter = filter;
-            end
-        end
-        
-        function out = apply(obj, data)
-            if ~isempty(obj.childFilter)
-                out = apply(obj.childFilter, data);
-            else
-                out = data.(obj.channel);
-            end
-            if obj.plotScope
-                obj.plot_scope(out);
+            if isfield(settings, 'saved')
+                obj.saved = settings.saved;
             end
         end
         
@@ -130,55 +119,6 @@ classdef MeasFilter < handle
             end
         end
         
-        function plot_scope(obj, data)
-            %Helper function to plot raw data to check timing and what not
-            if isempty(obj.scopeHandle)
-                fh = figure('HandleVisibility', 'callback', 'Name', 'MeasFilter Scope');
-                obj.scopeHandle = axes('Parent', fh);
-                prevData = [];
-                obj.scopeavgct = 1;
-            else
-                if nsdims(data) > 1
-                    prevData = get(get(obj.scopeHandle, 'Children'), 'CData');
-                else
-                    prevData = get(get(obj.scopeHandle, 'Children'), 'YData')';
-                end
-                obj.scopeavgct = obj.scopeavgct + 1;
-            end
-            if ndims(data) == 4 && nsdims(data) > 2
-                %Flatten single shot data into a 2D array
-                dims = size(data);
-                if isempty(prevData)
-                    imagesc(reshape(data, dims(1), prod(dims(2:end))), 'Parent', obj.scopeHandle);
-                    xlabel(obj.scopeHandle, 'Segment');
-                    ylabel(obj.scopeHandle, 'Time');
-                else
-                    data = (prevData*(obj.scopeavgct-1) + reshape(data, dims(1), prod(dims(2:end)))) / obj.scopeavgct;
-                    set(get(obj.scopeHandle, 'Children'), 'CData', data);
-                end
-            elseif nsdims(data) == 2
-                %Simply image plot 2D averaged data
-                if isempty(prevData)
-                    imagesc(squeeze(data), 'Parent', obj.scopeHandle);
-                    xlabel(obj.scopeHandle, 'Segment');
-                    ylabel(obj.scopeHandle, 'Time');
-                else
-                    set(get(obj.scopeHandle, 'Children'), 'CData', (prevData*(obj.scopeavgct-1) + squeeze(data))/obj.scopeavgct);
-                end
-            elseif nsdims(data) == 1
-                %Plot single shot data
-                if isempty(prevData)
-                    plot(squeeze(data), 'Parent', obj.scopeHandle);
-                    xlabel(obj.scopeHandle, 'Time')
-                    ylabel(obj.scopeHandle, 'Voltage');
-                else
-                    set(get(obj.scopeHandle, 'Children'), 'YData', (prevData*(obj.scopeavgct-1) + squeeze(data))/obj.scopeavgct);
-                end
-            else
-                error('Unable to handle data with these dimensions.')
-            end
-        end
-        
         function plot(obj, figH)
             %Given a figure handle plot the most recent data
             plotMap = struct();
@@ -208,14 +148,24 @@ classdef MeasFilter < handle
             end
             
             measData = obj.get_data();
+            dims = nsdims(measData);
             if ~isempty(measData)
                 for ct = 1:length(toPlot)
                     if isempty(obj.axesHandles{ct}) || ~ishandle(obj.axesHandles{ct})
                         obj.axesHandles{ct} = subplot(numRows, numCols, ct, 'Parent', figH);
-                        obj.plotHandles{ct} = plot(obj.axesHandles{ct}, toPlot{ct}.func(measData));
+                        if dims < 2
+                            obj.plotHandles{ct} = plot(obj.axesHandles{ct}, toPlot{ct}.func(measData));
+                        else
+                            obj.plotHandles{ct} = imagesc(toPlot{ct}.func(measData), 'Parent', obj.axesHandles{ct});
+                        end
                         ylabel(obj.axesHandles{ct}, toPlot{ct}.label)
                     else
-                        set(obj.plotHandles{ct}, 'YData', toPlot{ct}.func(measData));
+                        if dims < 2
+                            prop = 'YData';
+                        else
+                            prop = 'CData';
+                        end
+                        set(obj.plotHandles{ct}, prop, toPlot{ct}.func(measData));
                     end
                 end
             end
