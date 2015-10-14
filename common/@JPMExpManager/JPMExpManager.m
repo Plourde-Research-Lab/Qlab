@@ -1,29 +1,7 @@
-% The ExpManager is a fairly generic framework for experiments involving
-% swept parameters and digitizing scopes. It creates an asynchronous event
-% loop such that data acquisition can happen in a separate thread, and we
-% only process the data when it becomes available.
-%
-% Example usage:
-%   exp = ExpManager();
-%   exp.dataFileHandler = HDF5DataFileHandler('outfile.h5');
-%   % need to add at least one scope
-%   exp.add_instrument(InstrumentFactory('scope'));
-%   % need to add at least one AWG
-%   exp.add_instrument(InstrumentFactory('awg'));
-%   % need to add at least one sweep
-%   exp.add_sweep(SweepFactory('segmentNum', exp.instruments));
-%   % need to add at least one measurement
-%   import MeasFilters.*
-%   exp.add_measurement(
-%       DigitalHomodyne(struct('IFfreq', 10e6, 'channel', 'ch1',
-%       'integrationStart', 100, 'integrationPts', 300, 'samplingRate',
-%       100e6)));
-%
-%   % then initialize everything and run
-%   exp.init();
-%   exp.run();
+% The JPMExpManager is a modified version of ExpManager to use with JPM
+% Experiments.
 
-% Author/Date : Blake Johnson and Colm Ryan / February 4, 2013
+% Author/Date : Caleb Howington / Oct 2015
 
 % Copyright 2013 Raytheon BBN Technologies
 %
@@ -39,7 +17,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 
-classdef ExpManager < handle
+classdef JPMExpManager < handle
     properties
         dataFileHandler
         instruments = struct();
@@ -61,7 +39,7 @@ classdef ExpManager < handle
     
     methods
         %Constructor
-        function obj = ExpManager()
+        function obj = JPMExpManager()
         end
         
         %Destructor
@@ -84,7 +62,7 @@ classdef ExpManager < handle
             %clean up DataReady listeners and plot timer
             cellfun(@delete, obj.listeners);
             delete(obj.plotScopeTimer);
-            fprintf('ExpManager Finished!\n');
+            fprintf('JPMExpManager Finished!\n');
         end
         
         %Initialize
@@ -188,8 +166,10 @@ classdef ExpManager < handle
                 sizes = [sizes 1];
             end
             % initialize data storage
-            obj.data = structfun(@(x) struct('mean', complex(nan(sizes),nan(sizes)), 'realvar', nan(sizes), 'imagvar', nan(sizes), 'prodvar', nan(sizes)),...
-                obj.measurements, 'UniformOutput', false);
+%             obj.data = structfun(@(x) struct('mean', complex(nan(sizes),nan(sizes)), 'realvar', nan(sizes), 'imagvar', nan(sizes), 'prodvar', nan(sizes)),...
+%                 obj.measurements, 'UniformOutput', false);
+%             
+            obj.data = structfun(@(x) struct('counts', nan(sizes)), obj.measurements, 'UniformOutput', false );
             
             fprintf('Taking data....\n');
             
@@ -222,7 +202,7 @@ classdef ExpManager < handle
                         obj.take_data();
                         % pull data out of measurements
                         stepData = structfun(@(m) m.get_data(), obj.measurements, 'UniformOutput', false);
-                        stepVar = structfun(@(m) m.get_var(), obj.measurements, 'UniformOutput', false);
+%                         stepVar = structfun(@(m) m.get_var(), obj.measurements, 'UniformOutput', false);
                         for measName = fieldnames(stepData)'
                             if ~obj.measurements.(measName{1}).saved
                                 continue
@@ -235,21 +215,22 @@ classdef ExpManager < handle
                                 % lacking an idiomatic way to build the generic
                                 % assignment, we manually call subsasgn
                                 indexer = struct('type', '()', 'subs', {[num2cell(ct(1:end-1)), ':']});
-                                obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
-                                if obj.saveVariances
-                                    obj.data.(measName{1}).realvar = subsasgn(obj.data.(measName{1}).realvar, indexer, stepVar.(measName{1}).realvar);
-                                    obj.data.(measName{1}).imagvar = subsasgn(obj.data.(measName{1}).imagvar, indexer, stepVar.(measName{1}).imagvar);
-                                    obj.data.(measName{1}).prodvar = subsasgn(obj.data.(measName{1}).prodvar, indexer, stepVar.(measName{1}).prodvar);
-                                end
+                                obj.data.(measName{1}).counts = subsasgn(obj.data.(measName{1}).counts, indexer, stepData.(measName{1}));
+%                                 if obj.saveVariances
+%                                     obj.data.(measName{1}).realvar = subsasgn(obj.data.(measName{1}).realvar, indexer, stepVar.(measName{1}).realvar);
+%                                     obj.data.(measName{1}).imagvar = subsasgn(obj.data.(measName{1}).imagvar, indexer, stepVar.(measName{1}).imagvar);
+%                                     obj.data.(measName{1}).prodvar = subsasgn(obj.data.(measName{1}).prodvar, indexer, stepVar.(measName{1}).prodvar);
+%                                 end
                             else
                                 % we have a single point
                                 indexer = struct('type', '()', 'subs', {num2cell(ct)});
-                                obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
+                                obj.data.(measName{1}).counts = subsasgn(obj.data.(measName{1}).counts, indexer, stepData.(measName{1}));
                             end
                         end
                         plotResetFlag = all(ct == 1);
                         obj.plot_data(plotResetFlag);
-                        obj.save_data(stepData, stepVar);
+%                         obj.save_data(stepData, stepVar);
+                        obj.save_data(stepData);
                     end
                 else
                     %We've rolled over so reset this sweeps counter and
@@ -353,29 +334,33 @@ classdef ExpManager < handle
             plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
             plotMap.real = struct('label','Real Quad.', 'func', @real);
             plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
+            plotMap.counts = struct('label', 'Counts', 'func', @(x) x);
             
             for measName = fieldnames(obj.data)'
-                measData = squeeze(obj.data.(measName{1}).mean);
+                measData = squeeze(obj.data.(measName{1}).counts);
                 if isempty(measData)
                     continue;
                 end
                 
-                switch obj.measurements.(measName{1}).plotMode
-                    case 'amp/phase'
-                        toPlot = {plotMap.abs, plotMap.phase};
-                        numRows = 2; numCols = 1;
-                    case 'real/imag'
-                        toPlot = {plotMap.real, plotMap.imag};
-                        numRows = 2; numCols = 1;
-                    case 'quad'
-                        toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
-                        numRows = 2; numCols = 2;
-                    case 'normal'
-                        toPlot = {plotMap.real};
-                        numRows = 1; numCols = 1;
-                    otherwise
-                        toPlot = {};
-                end
+%                 switch obj.measurements.(measName{1}).plotMode
+%                     case 'amp/phase'
+%                         toPlot = {plotMap.abs, plotMap.phase};
+%                         numRows = 2; numCols = 1;
+%                     case 'real/imag'
+%                         toPlot = {plotMap.real, plotMap.imag};
+%                         numRows = 2; numCols = 1;
+%                     case 'quad'
+%                         toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
+%                         numRows = 2; numCols = 2;
+%                     case 'normal'
+%                         toPlot = {plotMap.real};
+%                         numRows = 1; numCols = 1;
+%                     otherwise
+%                         toPlot = {};
+%                 end
+                
+                toPlot = {plotMap.counts};
+                numRows=1; numCols=1;
 
                 %Check whether we have an open figure handle to plot to
                 if ~isfield(figHandles, measName{1}) || ~ishandle(figHandles.(measName{1}))

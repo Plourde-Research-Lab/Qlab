@@ -1,10 +1,10 @@
-% The ExpManager is a fairly generic framework for experiments involving
+% The JPMExpManager is a fairly generic framework for experiments involving
 % swept parameters and digitizing scopes. It creates an asynchronous event
 % loop such that data acquisition can happen in a separate thread, and we
 % only process the data when it becomes available.
 %
 % Example usage:
-%   exp = ExpManager();
+%   exp = JPMExpManager();
 %   exp.dataFileHandler = HDF5DataFileHandler('outfile.h5');
 %   % need to add at least one scope
 %   exp.add_instrument(InstrumentFactory('scope'));
@@ -39,7 +39,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 
-classdef ExpManager < handle
+classdef JPMExpManager < handle
     properties
         dataFileHandler
         instruments = struct();
@@ -61,7 +61,7 @@ classdef ExpManager < handle
     
     methods
         %Constructor
-        function obj = ExpManager()
+        function obj = JPMExpManager()
         end
         
         %Destructor
@@ -84,7 +84,7 @@ classdef ExpManager < handle
             %clean up DataReady listeners and plot timer
             cellfun(@delete, obj.listeners);
             delete(obj.plotScopeTimer);
-            fprintf('ExpManager Finished!\n');
+            fprintf('JPMExpManager Finished!\n');
         end
         
         %Initialize
@@ -188,8 +188,10 @@ classdef ExpManager < handle
                 sizes = [sizes 1];
             end
             % initialize data storage
-            obj.data = structfun(@(x) struct('mean', complex(nan(sizes),nan(sizes)), 'realvar', nan(sizes), 'imagvar', nan(sizes), 'prodvar', nan(sizes)),...
-                obj.measurements, 'UniformOutput', false);
+%             obj.data = structfun(@(x) struct('mean', complex(nan(sizes),nan(sizes)), 'realvar', nan(sizes), 'imagvar', nan(sizes), 'prodvar', nan(sizes)),...
+%                 obj.measurements, 'UniformOutput', false);
+%             
+            obj.data = structfun(@(x) struct('counts', nan(sizes)), obj.measurements, 'UniformOutput', false);
             
             fprintf('Taking data....\n');
             
@@ -227,25 +229,29 @@ classdef ExpManager < handle
                             if ~obj.measurements.(measName{1}).saved
                                 continue
                             end
-                            if isa(obj.sweeps{end}, 'sweeps.SegmentNum')
-                                % we are sweeping segment number, so we
-                                % have an entire row of data
-                                % what we want to do is:
-                                % obj.data.(measNames{ct})(ct(1), ct(2), ..., ct(n-1), :) = stepData{ct};
-                                % lacking an idiomatic way to build the generic
-                                % assignment, we manually call subsasgn
-                                indexer = struct('type', '()', 'subs', {[num2cell(ct(1:end-1)), ':']});
-                                obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
-                                if obj.saveVariances
-                                    obj.data.(measName{1}).realvar = subsasgn(obj.data.(measName{1}).realvar, indexer, stepVar.(measName{1}).realvar);
-                                    obj.data.(measName{1}).imagvar = subsasgn(obj.data.(measName{1}).imagvar, indexer, stepVar.(measName{1}).imagvar);
-                                    obj.data.(measName{1}).prodvar = subsasgn(obj.data.(measName{1}).prodvar, indexer, stepVar.(measName{1}).prodvar);
-                                end
-                            else
-                                % we have a single point
-                                indexer = struct('type', '()', 'subs', {num2cell(ct)});
-                                obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
-                            end
+%                             if isa(obj.sweeps{end}, 'sweeps.SegmentNum')
+%                                 % we are sweeping segment number, so we
+%                                 % have an entire row of data
+%                                 % what we want to do is:
+%                                 % obj.data.(measNames{ct})(ct(1), ct(2), ..., ct(n-1), :) = stepData{ct};
+%                                 % lacking an idiomatic way to build the generic
+%                                 % assignment, we manually call subsasgn
+%                                 indexer = struct('type', '()', 'subs', {[num2cell(ct(1:end-1)), ':']});
+%                                 obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
+%                                 if obj.saveVariances
+%                                     obj.data.(measName{1}).realvar = subsasgn(obj.data.(measName{1}).realvar, indexer, stepVar.(measName{1}).realvar);
+%                                     obj.data.(measName{1}).imagvar = subsasgn(obj.data.(measName{1}).imagvar, indexer, stepVar.(measName{1}).imagvar);
+%                                     obj.data.(measName{1}).prodvar = subsasgn(obj.data.(measName{1}).prodvar, indexer, stepVar.(measName{1}).prodvar);
+%                                 end
+%                             else
+%                                 % we have a single point
+%                                 indexer = struct('type', '()', 'subs', {num2cell(ct)});
+%                                 obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));
+%                             end
+                             % we have a single point
+                            indexer = struct('type', '()', 'subs', {num2cell(ct)});
+                            obj.data.(measName{1}).mean = subsasgn(obj.data.(measName{1}).mean, indexer, stepData.(measName{1}));                           
+                            
                         end
                         plotResetFlag = all(ct == 1);
                         obj.plot_data(plotResetFlag);
@@ -354,6 +360,8 @@ classdef ExpManager < handle
             plotMap.real = struct('label','Real Quad.', 'func', @real);
             plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
             
+            plotMap.counts = struct('label', 'Switching Prob', 'func', @counts);
+            
             for measName = fieldnames(obj.data)'
                 measData = squeeze(obj.data.(measName{1}).mean);
                 if isempty(measData)
@@ -371,7 +379,7 @@ classdef ExpManager < handle
                         toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
                         numRows = 2; numCols = 2;
                     case 'normal'
-                        toPlot = {plotMap.real};
+                        toPlot = {plotMap.counts};
                         numRows = 1; numCols = 1;
                     otherwise
                         toPlot = {};

@@ -1,9 +1,9 @@
 % timeDomain
-function ExpScripter(expName)
+function JPMExpScripter(expName)
 
-exp = ExpManager();
+exp = JPMExpManager();
 
-deviceName = 'IBM_PhaseII';
+deviceName = 'JPM';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
