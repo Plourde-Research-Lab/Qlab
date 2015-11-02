@@ -20,6 +20,7 @@ const byte SEG = 3;
 const byte REP = 4;
 const byte VAL = 5;
 const byte PARAM = 6;
+const byte RESET = 7;
 const byte UNKNOWN = -1;
 
 
@@ -103,6 +104,10 @@ int processInput(char* input) {
           command = SET;
           mode = PARAM;
         }
+        if(!strcasecmp(token, "RESET")){
+          command = RESET;
+          mode = DONE;
+        }
         if (!strcasecmp(token, "GET")) {
           command = GET;
           mode = PARAM;
@@ -144,7 +149,10 @@ int processInput(char* input) {
       setSegments(value);
     }
     else setReps(value);
-  } 
+  } else if(command == RESET){
+      resetCounter();
+      return 1;
+  }
 }
 
 void initCounter() {
@@ -180,7 +188,8 @@ ISR(TIMER2_COMPA_vect) {
 }
 
 void resetCounter(){
- TCNT1 = 0;
+  Serial.println("Resetting Counter");
+  TCNT1 = 0;
 }
 
 int getCount(){

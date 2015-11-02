@@ -27,7 +27,9 @@ classdef CounterMeasFilter < handle
         latestData
         accumulatedData
         accumulatedVar
-        repititions = 0
+        repititions = 1
+        segments = 1
+        avgct = 0
         varct = 0
         scopeavgct = 0
         plotScope = false
@@ -63,10 +65,12 @@ classdef CounterMeasFilter < handle
             if isfield(settings, 'saved')
                 obj.saved = settings.saved;
             end
+            obj.segments = settings.segments;
+            obj.repititions = settings.repititions;
         end
         
         function reset(obj)
-%             obj.avgct = 0;
+            obj.avgct = 0;
             obj.varct = 0;
             obj.accumulatedData = [];
             obj.scopeavgct = 0;
@@ -105,64 +109,74 @@ classdef CounterMeasFilter < handle
 %                 obj.accumulatedVar.prod = obj.accumulatedVar.prod + tmpVar.prod;
 %             end
 %             obj.avgct = obj.avgct + 1;
-            obj.accumulatedData = obj.latestData;
+            
+            if length(obj.latestData) == obj.segments
+                if isempty(obj.accumulatedData)
+                    obj.accumulatedData = obj.latestData; 
+                else
+                    obj.accumulatedData = obj.accumulatedData + obj.latestData;
+                end
+                obj.avgct = obj.avgct + 1;
+            elseif length(obj.latestData) == obj.repititions
+                obj.accumulatedData = mean(obj.latestData);
+            end
         end
         
         function out = get_data(obj)
-            out = obj.accumulatedData;
+            out = obj.accumulatedData / obj.avgct;
         end
-        
-        function plot(obj, figH)
-            %Given a figure handle plot the most recent data
-            plotMap = struct();
-            plotMap.abs = struct('label','Amplitude', 'func', @abs);
-            plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
-            plotMap.real = struct('label','Real Quad.', 'func', @real);
-            plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
-            
-            
-            switch obj.plotMode
-                case 'amp/phase'
-                    toPlot = {plotMap.abs, plotMap.phase};
-                    numRows = 2; numCols = 1;
-                case 'real/imag'
-                    toPlot = {plotMap.real, plotMap.imag};
-                    numRows = 2; numCols = 1;
-                case 'quad'
-                    toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
-                    numRows = 2; numCols = 2;
-                otherwise
-                    toPlot = {};
-            end
-            
-            if isempty(obj.axesHandles)
-                obj.axesHandles = cell(length(toPlot),1);
-                obj.plotHandles = cell(length(toPlot),1);
-            end
-            
-            measData = obj.get_data();
-            dims = nsdims(measData);
-            if ~isempty(measData)
-                for ct = 1:length(toPlot)
-                    if isempty(obj.axesHandles{ct}) || ~ishandle(obj.axesHandles{ct})
-                        obj.axesHandles{ct} = subplot(numRows, numCols, ct, 'Parent', figH);
-                        if dims < 2
-                            obj.plotHandles{ct} = plot(obj.axesHandles{ct}, toPlot{ct}.func(measData));
-                        else
-                            obj.plotHandles{ct} = imagesc(toPlot{ct}.func(measData), 'Parent', obj.axesHandles{ct});
-                        end
-                        ylabel(obj.axesHandles{ct}, toPlot{ct}.label)
-                    else
-                        if dims < 2
-                            prop = 'YData';
-                        else
-                            prop = 'CData';
-                        end
-                        set(obj.plotHandles{ct}, prop, toPlot{ct}.func(measData));
-                    end
-                end
-            end
-        end
+%         
+%         function plot(obj, figH)
+%             %Given a figure handle plot the most recent data
+%             plotMap = struct();
+%             plotMap.abs = struct('label','Amplitude', 'func', @abs);
+%             plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
+%             plotMap.real = struct('label','Real Quad.', 'func', @real);
+%             plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
+%             
+%             
+%             switch obj.plotMode
+%                 case 'amp/phase'
+%                     toPlot = {plotMap.abs, plotMap.phase};
+%                     numRows = 2; numCols = 1;
+%                 case 'real/imag'
+%                     toPlot = {plotMap.real, plotMap.imag};
+%                     numRows = 2; numCols = 1;
+%                 case 'quad'
+%                     toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
+%                     numRows = 2; numCols = 2;
+%                 otherwise
+%                     toPlot = {};
+%             end
+%             
+%             if isempty(obj.axesHandles)
+%                 obj.axesHandles = cell(length(toPlot),1);
+%                 obj.plotHandles = cell(length(toPlot),1);
+%             end
+%             
+%             measData = obj.get_data();
+%             dims = nsdims(measData);
+%             if ~isempty(measData)
+%                 for ct = 1:length(toPlot)
+%                     if isempty(obj.axesHandles{ct}) || ~ishandle(obj.axesHandles{ct})
+%                         obj.axesHandles{ct} = subplot(numRows, numCols, ct, 'Parent', figH);
+%                         if dims < 2
+%                             obj.plotHandles{ct} = plot(obj.axesHandles{ct}, toPlot{ct}.func(measData));
+%                         else
+%                             obj.plotHandles{ct} = imagesc(toPlot{ct}.func(measData), 'Parent', obj.axesHandles{ct});
+%                         end
+%                         ylabel(obj.axesHandles{ct}, toPlot{ct}.label)
+%                     else
+%                         if dims < 2
+%                             prop = 'YData';
+%                         else
+%                             prop = 'CData';
+%                         end
+%                         set(obj.plotHandles{ct}, prop, toPlot{ct}.func(measData));
+%                     end
+%                 end
+%             end
+%         end
     end
     
 end

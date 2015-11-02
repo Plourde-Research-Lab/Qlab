@@ -6,8 +6,11 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
     properties (Access = public)
         acquireMode = 'averager'
         data
-        reps = 1000
+        t
+        avgct = 0
+        reps
         segments = 1
+        settings
     end
     
     properties (Access = private)
@@ -32,13 +35,13 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
         end
         
         function setAll(obj, settings)
-           obj.reps = settings.reps;
+           obj.reps = settings.repititions;
            obj.segments = settings.segments;
            obj.resetCount()
         end
         
         function resetCount(obj)
-            cmd = 't';
+            cmd = 'RESET';
             obj.write(cmd)
         end
         
@@ -47,14 +50,25 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
         end
         
         function acquire(obj)
-%             obj.data = str2double(obj.getCount());
-%             notify(obj, 'DataReady');
-%             obj.done = true;
             obj.data = [];
-            for index = 1:obj.segments
-                obj.data = [obj.data, str2num(obj.getCount())];
+            
+            if obj.segments == 1 %We are averaging one waveform
+                for index = 1:obj.reps
+                   obj.data = [obj.data, str2double(obj.getCount())]; 
+                end
+                obj.data = mean(obj.data);
+                notify(obj, 'DataReady');
+            else                    % We are averaging segments as they come in
+                while obj.avgct < obj.reps
+                    obj.data = [];
+                    for index = 1:obj.segments 
+                        obj.data = [obj.data, str2double(obj.getCount())];
+                    end
+                    obj.avgct = obj.avgct+1;
+                    notify(obj, 'DataReady');
+                end
             end
-            notify(obj, 'DataReady');
+
             obj.done=true;
         end
         

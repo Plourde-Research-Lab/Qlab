@@ -118,7 +118,7 @@ classdef JPMExpManager < handle
                     end
                 end
                 %Open data file
-                obj.dataFileHandler.open(obj.dataFileHeader, dataInfos, obj.saveVariances);
+%                 obj.dataFileHandler.open(obj.dataFileHeader, dataInfos, obj.saveVariances);
             end
             
         end
