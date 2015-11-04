@@ -27,12 +27,12 @@ classdef CounterMeasFilter < handle
         latestData
         accumulatedData
         accumulatedVar
-        repititions = 1
-        segments = 1
+        repititions = 1000
+        segments = 11
         avgct = 0
         varct = 0
         scopeavgct = 0
-        plotScope = false
+        plotScope = true
         scopeHandle
         plotMode = 'amp/phase' %allowed enums are 'amp/phase', 'real/imag', 'quad'
         axesHandles
