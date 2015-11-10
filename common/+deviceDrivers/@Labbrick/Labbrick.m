@@ -16,7 +16,7 @@
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-classdef (Sealed) Labbrick < deviceDrivers.lib.uWSource
+classdef Labbrick < deviceDrivers.lib.uWSource
     % Class-specific constant properties
     properties (Constant = true)
         MAX_DEVICES = 64;
@@ -25,11 +25,11 @@ classdef (Sealed) Labbrick < deviceDrivers.lib.uWSource
 
 
     % Class-specific private properties
-    properties (Access = private)
+    properties 
         devID;
         open = 0;
-        serialNum = 1;
-        model = 'LMS-103';
+        serialNum = 5325;
+        model = 'LSG-602';
         max_power = 10; % dBm
         min_power = -40; % dBm
         max_freq = 10; % GHz

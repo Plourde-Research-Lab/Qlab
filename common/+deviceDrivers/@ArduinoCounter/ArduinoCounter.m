@@ -31,7 +31,7 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
             obj = obj@deviceDrivers.lib.Serial();
             obj.baudRate = 115200;
             
-            obj.data = zeros(1, obj.segments);
+%             obj.data = zeros(1, obj.segments);
         end
         
         function setAll(obj, settings)

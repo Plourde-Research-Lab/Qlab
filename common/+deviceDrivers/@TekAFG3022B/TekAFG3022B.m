@@ -10,7 +10,7 @@ classdef (Sealed) TekAFG3022B <  deviceDrivers.lib.GPIBorVISA
         output
         channel = 2
         width = 100
-        height = 1
+        amp = 1
     end % end device properties
     
     methods
@@ -20,19 +20,25 @@ classdef (Sealed) TekAFG3022B <  deviceDrivers.lib.GPIBorVISA
         end
         
         function setAll(obj, settings)
-            obj.set.width(settings.width);
-            obj.set.height(settings.height);
+            obj.channel = settings.channel;
+            obj.write(['TRIG:SOURce EXT'])
+            obj.write(['SOURce' obj.channel ':VOLTage:LEVel:IMMediate:LOW 0mV'])
+            obj.write(['SOURce' obj.channel ':FUNC PULS'])
+            obj.write(['SOURce' obj.channel ':BURSt 1'])
+            obj.write(['SOURce' obj.channel ':BURSt:NCYCles 1'])
+            obj.set('width', settings.width);
+            obj.set('amp', settings.amp);
             
         end
         
         function obj = set.width(obj, value)
             assert(isnumeric(value), 'Requires numeric input');
-            obj.write(['SOURce' obj.channel ':PULSe:WIDTh ' slow_width])   
+            obj.write(['SOURce' obj.channel ':PULSe:WIDTh ' value 'US'])   
         end
         
-        function obj = set.height(obj, value)
+        function obj = set.amp(obj, value)
             assert(isnumeric(value), 'Requires numeric input');
-            obj.write(['SOURce' obj.channel ':VOLTage:LEVel:IMMediate:HIGH ' slow_amp]);
+            obj.write(['SOURce' obj.channel ':VOLTage:LEVel:IMMediate:HIGH ' value 'V']);
         end
     end
     

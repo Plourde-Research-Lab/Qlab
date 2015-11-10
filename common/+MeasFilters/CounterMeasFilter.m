@@ -125,16 +125,16 @@ classdef CounterMeasFilter < handle
         function out = get_data(obj)
             out = obj.accumulatedData / obj.avgct;
         end
-%         
-%         function plot(obj, figH)
-%             %Given a figure handle plot the most recent data
-%             plotMap = struct();
-%             plotMap.abs = struct('label','Amplitude', 'func', @abs);
-%             plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
-%             plotMap.real = struct('label','Real Quad.', 'func', @real);
-%             plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
-%             
-%             
+        
+        function plot(obj, figH)
+            %Given a figure handle plot the most recent data
+            plotMap = struct();
+            plotMap.abs = struct('label','Amplitude', 'func', @abs);
+            plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
+            plotMap.real = struct('label','Real Quad.', 'func', @real);
+            plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
+            plotMap.counts = struct('label', 'Counts', 'func', @(x) x);
+            
 %             switch obj.plotMode
 %                 case 'amp/phase'
 %                     toPlot = {plotMap.abs, plotMap.phase};
@@ -148,35 +148,38 @@ classdef CounterMeasFilter < handle
 %                 otherwise
 %                     toPlot = {};
 %             end
-%             
-%             if isempty(obj.axesHandles)
-%                 obj.axesHandles = cell(length(toPlot),1);
-%                 obj.plotHandles = cell(length(toPlot),1);
-%             end
-%             
-%             measData = obj.get_data();
-%             dims = nsdims(measData);
-%             if ~isempty(measData)
-%                 for ct = 1:length(toPlot)
-%                     if isempty(obj.axesHandles{ct}) || ~ishandle(obj.axesHandles{ct})
-%                         obj.axesHandles{ct} = subplot(numRows, numCols, ct, 'Parent', figH);
-%                         if dims < 2
-%                             obj.plotHandles{ct} = plot(obj.axesHandles{ct}, toPlot{ct}.func(measData));
-%                         else
-%                             obj.plotHandles{ct} = imagesc(toPlot{ct}.func(measData), 'Parent', obj.axesHandles{ct});
-%                         end
-%                         ylabel(obj.axesHandles{ct}, toPlot{ct}.label)
-%                     else
-%                         if dims < 2
-%                             prop = 'YData';
-%                         else
-%                             prop = 'CData';
-%                         end
-%                         set(obj.plotHandles{ct}, prop, toPlot{ct}.func(measData));
-%                     end
-%                 end
-%             end
-%         end
+
+            toPlot = {plotMap.counts};
+                numRows=1; numCols=1;
+
+            if isempty(obj.axesHandles)
+                obj.axesHandles = cell(length(toPlot),1);
+                obj.plotHandles = cell(length(toPlot),1);
+            end
+            
+            measData = obj.get_data();
+            dims = nsdims(measData);
+            if ~isempty(measData)
+                for ct = 1:length(toPlot)
+                    if isempty(obj.axesHandles{ct}) || ~ishandle(obj.axesHandles{ct})
+                        obj.axesHandles{ct} = subplot(numRows, numCols, ct, 'Parent', figH);
+                        if dims < 2
+                            obj.plotHandles{ct} = plot(obj.axesHandles{ct}, toPlot{ct}.func(measData));
+                        else
+                            obj.plotHandles{ct} = imagesc(toPlot{ct}.func(measData), 'Parent', obj.axesHandles{ct});
+                        end
+                        ylabel(obj.axesHandles{ct}, toPlot{ct}.label)
+                    else
+                        if dims < 2
+                            prop = 'YData';
+                        else
+                            prop = 'CData';
+                        end
+                        set(obj.plotHandles{ct}, prop, toPlot{ct}.func(measData));
+                    end
+                end
+            end
+        end
     end
     
 end

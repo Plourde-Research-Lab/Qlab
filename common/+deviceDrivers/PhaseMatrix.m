@@ -44,7 +44,14 @@ classdef (Sealed) PhaseMatrix < deviceDrivers.lib.uWSource & deviceDrivers.lib.S
         end
         
         function val = get.output(obj)
-            val = str2double(obj.query('OUTP:STAT?'));
+            strVal = obj.query('OUTP:STAT?');
+            if strfind(strVal, 'ON')
+                val = 1;
+            elseif strfind(strVal, 'OFF')
+                val = 0;
+            else
+                error('Unrecognized return value: %s', strVal);
+            end            
         end
         
         function val = get.alc(obj)
@@ -88,9 +95,9 @@ classdef (Sealed) PhaseMatrix < deviceDrivers.lib.uWSource & deviceDrivers.lib.S
         end
         
         function obj = set.output(obj, value)
-            if isnumeric(value)
-                value = num2str(value);
-            end
+
+            value = num2str(value);
+
             
             % Validate input
             onOffMap = containers.Map({'on','1','off','0'},...
@@ -111,9 +118,9 @@ classdef (Sealed) PhaseMatrix < deviceDrivers.lib.uWSource & deviceDrivers.lib.S
         end
         
         function obj = set.pulse(obj, value)
-            if isnumeric(value)
-                value = num2str(value);
-            end
+
+            value = num2str(value);
+
             % Validate input
             onOffMap = containers.Map({'on','1','off','0'},...
                 {'ON','ON','OFF','OFF'});
