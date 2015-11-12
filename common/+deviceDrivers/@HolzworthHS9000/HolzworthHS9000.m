@@ -85,9 +85,13 @@ classdef HolzworthHS9000 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
             % this method is non-static because it depends on the DLL being
             % loaded
             deviceStr = calllib('HolzworthMulti', 'getAttachedDevices');
-            % split result on commas
-            devices = textscan(deviceStr, '%s', 'Delimiter', ',');
-            devices = devices{1};
+            if ~isempty(deviceStr)
+                % split result on commas
+                devices = textscan(deviceStr, '%s', 'Delimiter', ',');
+                devices = devices{1};
+            else
+                devices = {};
+            end
         end
         
         function out = unique_serials(obj)
@@ -106,6 +110,8 @@ classdef HolzworthHS9000 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
                 if ~isa(ch, 'char')
                     ch = num2str(ch);
                     chString = [':CH' ch];
+                elseif ch == 'R'
+                    chString = ':REF';   
                 else
                     chString = [':' ch];
                 end
@@ -194,11 +200,11 @@ classdef HolzworthHS9000 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
             % allowed values for ref = (internal 100MHz) 'int', (external) '10MHz', or (external) '100MHz'
             switch upper(ref)
                 case 'INT'
-                    obj.write('REF', ':INT:100MHz');
+                    obj.write('R', ':INT:100MHz');
                 case '10MHZ'
-                    obj.write('REF', ':EXT:10MHz');
+                    obj.write('R', ':EXT:10MHz');
                 case '100MHZ'
-                    obj.write('REF', ':EXT:100MHz');
+                    obj.write('R', ':EXT:100MHz');
                 otherwise
                     error('Unrecognized reference: %s', ref);
             end
@@ -206,7 +212,7 @@ classdef HolzworthHS9000 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
         end
 
         function out = get.ref(obj)
-            out = obj.query('REF', ':STATUS?');
+            out = obj.query('R', ':STATUS?');
         end
     end
     

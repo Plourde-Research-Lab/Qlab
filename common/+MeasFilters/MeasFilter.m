@@ -22,6 +22,7 @@
 classdef MeasFilter < handle
     
     properties
+        label
         dataSource
         latestData
         accumulatedData
@@ -47,7 +48,8 @@ classdef MeasFilter < handle
     end
     
     methods
-        function obj = MeasFilter(settings)
+        function obj = MeasFilter(label, settings)
+            obj.label = label;
             % MeasFilter(settings)
             if isfield(settings, 'plotScope')
                 obj.plotScope = settings.plotScope;
@@ -109,13 +111,12 @@ classdef MeasFilter < handle
             out = obj.accumulatedData / obj.avgct;
         end
         
-        % For averager mode, this returns the variance of mean
         function out = get_var(obj)
             out = struct();
             if ~isempty(obj.accumulatedVar)
-                out.realvar = (obj.accumulatedVar.real/(obj.varct) - real(get_data(obj)).^2)/(obj.varct-1);
-                out.imagvar = (obj.accumulatedVar.imag/(obj.varct) - imag(get_data(obj)).^2)/(obj.varct-1);
-                out.prodvar = (obj.accumulatedVar.prod/(obj.varct) - real(get_data(obj)).*imag(get_data(obj)))/(obj.varct-1);
+                out.realvar = obj.accumulatedVar.real/(obj.varct) - real(get_data(obj)).^2;
+                out.imagvar = obj.accumulatedVar.imag/(obj.varct) - imag(get_data(obj)).^2;
+                out.prodvar = obj.accumulatedVar.prod/(obj.varct) - real(get_data(obj)).*imag(get_data(obj));
             end
         end
         

@@ -1,31 +1,17 @@
 % timeDomain
-function ExpScripter(expName,scripterFile)
+function ExpScripter(expName)
 
 exp = ExpManager();
 
-deviceName = '7GHz_3D';
+deviceName = 'APS';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
-expSettings = json.read(scripterFile);
-% ignore a json saftey warning about the BBNAPS1-XXX naming convention
-% BBNAPS1-2m1 will be replaced with BBNAPS10x2D2m1
-warning('off','json:fieldNameConflict');
-% Sanitize chanParams to remove unnecessary meta information
-chanSettings = json.read(getpref('qlab','ChannelParamsFile'));
-chanSettings = rmfield(chanSettings,{'x__module__'; 'x__class__'});
-% We want to store the channel params in the expSettings json so we're
-% using the method found on stackoverflow to merge structs:
-% http://stackoverflow.com/questions/15245167/update-struct-via-another-struct-in-matlab
-names = [fieldnames(expSettings); fieldnames(chanSettings)];
-expSettings = cell2struct([struct2cell(expSettings); struct2cell(chanSettings)], names, 1);
-
+expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+exp.dataFileHeader = expSettings;
 exp.CWMode = expSettings.CWMode;
 instrSettings = expSettings.instruments;
 sweepSettings = expSettings.sweeps;
 measSettings = expSettings.measurements;
-
-% throw the experimental settings into the .h5 file header
-exp.dataFileHeader = expSettings;
 
 for instrument = fieldnames(instrSettings)'
     fprintf('Connecting to %s\n', instrument{1});
@@ -37,8 +23,8 @@ for sweep = fieldnames(sweepSettings)'
     add_sweep(exp, sweepSettings.(sweep{1}).order, SweepFactory(sweepSettings.(sweep{1}), exp.instruments));
 end
 
-%Loop over the measurments: insert the non-dependent single channel measurements, keep
-%back the correlators and then apply them,
+%Loop over the measurments: insert the single channel measurements, keep
+%back the correlators and then apply them
 correlators = {};
 measFilters = struct();
 measNames = fieldnames(measSettings);
@@ -50,7 +36,7 @@ for meas = measNames'
         correlators{end+1} = measName;
     else
         %Otherwise load it and keep a reference to it
-        measFilters.(measName) = MeasFilters.(params.filterType)(params);
+        measFilters.(measName) = MeasFilters.(params.filterType)(measName,params);
         add_measurement(exp, measName, measFilters.(measName));
     end
 end
@@ -64,13 +50,5 @@ end
 
 exp.init();
 exp.run();
-
-delete(instrfind);
-
-ds = deviceDrivers.SIM928();
-ds.connect(19);
-ds.set('value',0);
-ds.disconnect();
-delete(instrfind);
 
 end
