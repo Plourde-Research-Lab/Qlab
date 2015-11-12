@@ -1,4 +1,4 @@
-classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
+classdef (Sealed) PhaseMatrixFSW0020 < deviceDrivers.lib.uWSource & deviceDrivers.lib.Serial
     % PhaseMatrix signal generator
     
     properties (Access = public)
@@ -13,7 +13,7 @@ classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.l
     end % end device properties
     
     methods
-        function obj = PhaseMatrixGPIB()
+        function obj = PhaseMatrixFSW0020()
             obj.baudRate = 115200;
         end
         
@@ -91,7 +91,7 @@ classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.l
             if isnumeric(value)
                 value = num2str(value);
             end
-            
+            value = num2str(value);
             % Validate input
             onOffMap = containers.Map({'on','1','off','0'},...
                 {'ON','ON','OFF','OFF'});
@@ -111,17 +111,17 @@ classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.l
         end
         
         function obj = set.pulse(obj, value)
-            if isnumeric(value)
-                value = num2str(value);
-            end
-            % Validate input
-            onOffMap = containers.Map({'on','1','off','0'},...
-                {'ON','ON','OFF','OFF'});
-            if not (onOffMap.isKey( lower(value) ))
-                error('Invalid input');
-            end
-            
-            obj.write(sprintf('PULM:STAT %s', onOffMap(value)));
+%             if isnumeric(value)
+%                 value = num2str(value);
+%             end
+%             % Validate input
+%             onOffMap = containers.Map({'on','1','off','0'},...
+%                 {'ON','ON','OFF','OFF'});
+%             if not (onOffMap.isKey( lower(value) ))
+%                 error('Invalid input');
+%             end
+%             
+%             obj.write(sprintf('PULM:STAT %s', onOffMap(value)));
         end
         
         function obj = set.pulseSource(obj, value)

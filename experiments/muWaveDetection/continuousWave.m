@@ -4,15 +4,17 @@ function continuousWave()
 % with a microwave tone form the top Agilent
 % usage: >> continuousWave()
 %
-aps = deviceDrivers.APS();
-ag = deviceDrivers.AgilentN5183A();
+aps = APS();
+%ag = deviceDrivers.AgilentN5183A();
+ag = deviceDrivers.AgilentE8257D();
 
-ag.connect(12);
+
+ag.connect(6);
 aps.connect('A6001ixV');
 aps.stop();
 
 % create the wave form
-ssbFreq = 10000000;
+ssbFreq = 19000000;
 waveformLength = 1200;
 
 tpts = (1/1200000000)*(0:(waveformLength-1));
@@ -35,8 +37,8 @@ aps.setEnabled(1, 1);
 
 aps.run()
 
-ag.frequency = 5.0;
-ag.power = 13.0;
+ag.frequency = 8;
+ag.power = 18.0;
 ag.output = 1;
 ag.pulse = 0;
 

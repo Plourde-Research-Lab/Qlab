@@ -1,4 +1,4 @@
-classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
+classdef (Sealed) PhaseMatrixFSW0020 < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
     % PhaseMatrix signal generator
     
     properties (Access = public)
@@ -13,8 +13,8 @@ classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.l
     end % end device properties
     
     methods
-        function obj = PhaseMatrix()
-            obj.baudRate = 115200;
+        function obj = PhaseMatrixFSW0020()
+%             obj.baudRate = 115200;
         end
         
         function connect(obj, addr)
@@ -81,17 +81,18 @@ classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.l
         
         function obj = set.power(obj, value)
             % Validate input
-            if ~isnumeric(value)
-                error('Invalid input');
-            end
-            obj.write(sprintf('POW %f',value));
+%             if ~isnumeric(value)
+%                 error('Invalid input');
+%             end
+%             obj.write(sprintf('POW %f',value));
+              
         end
         
         function obj = set.output(obj, value)
             if isnumeric(value)
                 value = num2str(value);
             end
-            
+            value = num2str(value);
             % Validate input
             onOffMap = containers.Map({'on','1','off','0'},...
                 {'ON','ON','OFF','OFF'});
@@ -114,12 +115,13 @@ classdef (Sealed) PhaseMatrixGPIB < deviceDrivers.lib.uWSource & deviceDrivers.l
             if isnumeric(value)
                 value = num2str(value);
             end
+            value = num2str(value);
             % Validate input
             onOffMap = containers.Map({'on','1','off','0'},...
                 {'ON','ON','OFF','OFF'});
-            if not (onOffMap.isKey( lower(value) ))
-                error('Invalid input');
-            end
+%             if not (onOffMap.isKey( lower(value) ))
+%                 error('Invalid input');
+%             end
             
             obj.write(sprintf('PULM:STAT %s', onOffMap(value)));
         end

@@ -19,6 +19,7 @@ function [cost, J] = piObjectiveFunction(obj, x, direction)
         obj.channelParams.(chan) = offset;
         % load sequence
         obj.loadSequence(filenames, 1);  
+
     end
     
     % measure

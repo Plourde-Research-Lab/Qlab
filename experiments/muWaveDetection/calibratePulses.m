@@ -7,7 +7,7 @@ end
 % construct minimal cfg file
 ExpParams = struct();
 ExpParams.Qubit = qubit;
-ExpParams.measurement = 'M1';
+ExpParams.measurement = 'M1_KernalIntegrator';
 ExpParams.DoMixerCal = 0;
 ExpParams.DoRabiAmp = 1;
 ExpParams.DoRamsey = 0;
@@ -15,7 +15,7 @@ ExpParams.NumPi2s = 11;
 ExpParams.DoPi2Cal = 1;
 ExpParams.NumPis = 11;
 ExpParams.DoPiCal = 1;
-ExpParams.DoDRAGCal = 1;
+ExpParams.DoDRAGCal = 0;
 ExpParams.DRAGparams = linspace(1,5,11);
 ExpParams.DoSPAMCal = 0;
 ExpParams.OffsetNorm = 6;

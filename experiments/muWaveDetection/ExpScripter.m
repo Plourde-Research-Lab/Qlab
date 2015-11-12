@@ -1,12 +1,12 @@
 % timeDomain
-function ExpScripter(expName)
+function ExpScripter(expName,scripterFile)
 
 exp = ExpManager();
 
-deviceName = 'Al_08082014';
+deviceName = '7GHz_3D';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
-expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+expSettings = json.read(scripterFile);
 % ignore a json saftey warning about the BBNAPS1-XXX naming convention
 % BBNAPS1-2m1 will be replaced with BBNAPS10x2D2m1
 warning('off','json:fieldNameConflict');
@@ -19,6 +19,7 @@ chanSettings = rmfield(chanSettings,{'x__module__'; 'x__class__'});
 names = [fieldnames(expSettings); fieldnames(chanSettings)];
 expSettings = cell2struct([struct2cell(expSettings); struct2cell(chanSettings)], names, 1);
 
+exp.CWMode = expSettings.CWMode;
 instrSettings = expSettings.instruments;
 sweepSettings = expSettings.sweeps;
 measSettings = expSettings.measurements;
@@ -47,16 +48,9 @@ for meas = measNames'
     if strcmp(params.filterType,'Correlator')
         %If it is a correlator than hold it back
         correlators{end+1} = measName;
-    elseif ~params.dependent
+    else
         %Otherwise load it and keep a reference to it
-        % look for children
-        if ~isempty(params.childFilter)
-            childParams = measSettings.(params.childFilter);
-            childFilter = MeasFilters.(childParams.filterType)(childParams);
-            measFilters.(measName) = MeasFilters.(params.filterType)(childFilter, params);
-        else
-            measFilters.(measName) = MeasFilters.(params.filterType)(params);
-        end
+        measFilters.(measName) = MeasFilters.(params.filterType)(params);
         add_measurement(exp, measName, measFilters.(measName));
     end
 end
@@ -71,5 +65,12 @@ end
 exp.init();
 exp.run();
 
+delete(instrfind);
+
+ds = deviceDrivers.SIM928();
+ds.connect(19);
+ds.set('value',0);
+ds.disconnect();
+delete(instrfind);
 
 end

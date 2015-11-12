@@ -14,6 +14,15 @@ else
     h = figure;
     plotTitle = '';
 end
+
+xnew = xdata(2:end);
+ynew = ydata(2:end);
+clear xdata;
+clear ydata;
+xdata = xnew;
+ydata = ynew;
+
+
 xdata = xdata(:);
 y = ydata(:);
 

@@ -15,6 +15,14 @@ else
     plotTitle = 'Fit to a Damped Sinusoid';
 end
 
+xnew = xdata(1:end);
+ynew = ydata(1:end);
+clear xdata;
+clear ydata;
+xdata = xnew;
+ydata = ynew;
+
+
 y = ydata(:);
 
 % if xdata is a single value, assume that it is the time step

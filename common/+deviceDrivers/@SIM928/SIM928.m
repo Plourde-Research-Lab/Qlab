@@ -51,7 +51,7 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
         end
         % setters
         function obj = set.value(obj, value)
-            cmd = sprintf('SNDT %d,"VOLT %d"',3,value);
+            cmd = sprintf('SNDT %d,"VOLT %d"',obj.channel, value);
             obj.write(cmd);
         end
     end
