@@ -1,14 +1,14 @@
  % timeDomain
-function TrackedSpec(expName)
+function TrackedSpecAPS2(expName)
 
 import MeasFilters.*
 
 exp = ExpManager();
 
-deviceName = 'MH011';
+deviceName = 'MH076_LOREAL';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
-expSettings = jsonlab.loadjson(fullfile(getpref('qlab', 'cfgDir'), 'tracked_spec.json'));
+expSettings = json.read(getpref('qlab', 'CurScripterFile'));
 exp.dataFileHeader = expSettings;
 
 exp.CWMode = expSettings.CWMode;
@@ -17,16 +17,17 @@ sweepSettings = expSettings.sweeps;
 measSettings = expSettings.measurements;
 
 for instrument = fieldnames(instrSettings)'
-    instr = InstrumentFactory(instrument{1});
+    fprintf('Connecting to %s\n', instrument{1});
+    instr = InstrumentFactory(instrument{1}, instrSettings.(instrument{1}));
     add_instrument(exp, instrument{1}, instr, instrSettings.(instrument{1}));
 end
 
 cavitySweepSettings = struct(...
     'genID', 'TopAgilentE8257D',...
-    'start', 9.16030,...
-    'stop', 9.16200,...
-    'step', 0.00020,...
-    'offset', -0.00040);
+    'start', 7.17350,...
+    'stop', 7.17650,...
+    'step', 0.00005,...
+    'offset', 0.00000);
 
 add_sweep(exp, 1, SweepFactory(sweepSettings.DC, exp.instruments), rebias_cavity_callback(cavitySweepSettings));
 add_sweep(exp, 2, SweepFactory(sweepSettings.Frequency, exp.instruments));
@@ -44,7 +45,7 @@ for meas = measNames'
         correlators{end+1} = measName;
     else
         %Otherwise load it and keep a reference to it
-        measFilters.(measName) = MeasFilters.(params.filterType)(params);
+        measFilters.(measName) = MeasFilters.(params.filterType)(measName,params);
         add_measurement(exp, measName, measFilters.(measName));
     end
 end

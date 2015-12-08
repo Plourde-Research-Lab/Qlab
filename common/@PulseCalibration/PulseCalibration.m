@@ -52,7 +52,7 @@ classdef PulseCalibration < handle
                         averagerSettings = obj.experiment.scopes{scopeind}.averager;
                         averagerSettings.nbrSegments = length(segmentPoints);
                         obj.experiment.scopes{scopeind}.averager = averagerSettings;
-                        obj.experiment.scopes{scopeind}.acquireMode = 'digitizer';
+                        obj.experiment.scopes{scopeind}.acquireMode = 'averager';
                     case 'X6'
                         x6 = obj.experiment.scopes{scopeind};
                         set_averager_settings(x6, x6.recordLength, length(segmentPoints), x6.nbrWaveforms, x6.nbrRoundRobins);

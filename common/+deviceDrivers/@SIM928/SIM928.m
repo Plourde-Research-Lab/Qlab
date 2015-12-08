@@ -22,11 +22,18 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 % select which range, 2 = 10 mV, 3 = 100 mV, 4 = 1V, 5 = 10V,6 = 30V
-classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.GPIB
+classdef (Sealed) SIM928 < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIB
     properties (Access = public)
         output
         channel
         value
+        frequency  	% defined in deviceDrivers.lib.uWSource
+        power      	% defined in deviceDrivers.lib.uWSource
+        phase      	% defined in deviceDrivers.lib.uWSource
+        mod        	% defined in deviceDrivers.lib.uWSource
+        alc        	% defined in deviceDrivers.lib.uWSource
+        pulse      	% defined in deviceDrivers.lib.uWSource
+        pulseSource	% defined in deviceDrivers.lib.uWSource
     end % end device properties
     methods
         function obj = SIM928()
@@ -40,7 +47,7 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
         % Instrument parameter accessors
         % getters
         function val = get.output(obj)
-            val = str2double(obj.query('SNDT %d,"EXON?"',obj.channel)); % convert to GHz
+            val = str2double(obj.query(['SNDT ', num2str(obj.channel), ',"EXON?"'])); % convert to GHz
         end
         function val = get.channel(obj)
             val = obj.channel;
@@ -53,6 +60,28 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
         function obj = set.value(obj, value)
             cmd = sprintf('SNDT %d,"VOLT %d"',obj.channel, value);
             obj.write(cmd);
+        end
+        function obj = set.output(obj, value)
+
+            %Zero voltage
+            if not (value)
+                cmd = sprintf('SNDT %d,"VOLT 0"',obj.channel); 
+                obj.write(cmd);
+            end
+
+            if isnumeric(value)
+                value = num2str(value);
+            end
+            
+%             Comment out for now, just set to 0
+%             % Validate input
+%             checkMapObj = containers.Map({'on','1','true', 'off','0', 'false'},...
+%                 {'ON','ON','ON','OF','OF','OF'});
+%             if not (checkMapObj.isKey( num2str(lower(value)) ))
+%                 error('Invalid input');
+%             end            
+%            cmd = ['SNDT ' num2str(obj.channel) ',"OP' checkMapObj(num2str(value)) '"'];
+%            obj.write(cmd);
         end
     end
 end
