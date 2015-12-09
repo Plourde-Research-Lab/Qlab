@@ -24,9 +24,10 @@ classdef Pulse < sweeps.Sweep
     methods
         % constructor
         function obj = Pulse(sweepParams, Instr)
-            
+            % look for an instrument with the name 'genID'
+            obj.Instr = Instr.(sweepParams.instr);
             obj.mode = sweepParams.mode;
-            obj.channel = sweepParams.channel;
+%             obj.channel = obj.Instr.channel;
             
             if isfield(sweepParams, 'label')
                 obj.axisLabel = sweepParams.axisLabel;
@@ -46,8 +47,7 @@ classdef Pulse < sweeps.Sweep
                 step = -abs(step);
             end
             
-            % look for an instrument with the name 'genID'
-            obj.Instr = Instr.(sweepParams.instr);
+
             
             % generate step points
             obj.points = start:step:stop;
@@ -56,11 +56,11 @@ classdef Pulse < sweeps.Sweep
         
         
         function stepAmp(obj, index)
-            obj.instr.set('amp', obj.points(index));
+            obj.Instr.set('amp', obj.points(index));
         end
         
         function stepWidth(obj, index)
-            obj.instr.set('width', obj.points(index));
+            obj.Instr.set('width', obj.points(index));
         end
         % pulse stepper
         function step(obj, index)

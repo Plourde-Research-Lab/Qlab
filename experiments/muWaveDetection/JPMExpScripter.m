@@ -4,7 +4,7 @@ function JPMExpScripter(expName)
 exp = JPMExpManager();
 
 deviceName = 'JPM';
-exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
+exp.dataFileHandler = JPMDataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
 exp.dataFileHeader = expSettings;

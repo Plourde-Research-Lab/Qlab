@@ -177,7 +177,7 @@ void initTriggerCounter() {
   TCCR2B = 0;
   TIMSK2 = bit (TOIE2);
   GTCCR = bit (PSRASY);        // reset prescaler now
-  OCR2A = 2;
+  // OCR2A = 2;
   TCCR1B =  bit (CS10) | bit (CS11) | bit (CS12);
   TCNT2 = 0;
 }
@@ -188,7 +188,7 @@ ISR(TIMER2_COMPA_vect) {
 }
 
 void resetCounter(){
-  Serial.println("Resetting Counter");
+  // Serial.println("Resetting Counter");
   TCNT1 = 0;
 }
 
@@ -203,7 +203,7 @@ void printCount(){
 }
 
 void printOverflow() {
-  Serial.println("Timer2 overflow");  
+  // Serial.println("Timer2 overflow");  
 }
 
 void setSegments(int value) {

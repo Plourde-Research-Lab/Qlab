@@ -54,7 +54,7 @@ classdef JPMExpManager < handle
             
             %If we botched something and ctrl-c'd out then mark the file as
             %incomplete
-            if isa(obj.dataFileHandler, 'HDF5DataHandler') && obj.dataFileHandler.fileOpen == 1
+            if isa(obj.dataFileHandler, 'JPMDataHandler') && obj.dataFileHandler.fileOpen == 1
                 obj.dataFileHandler.close();
                 obj.dataFileHandler.markAsIncomplete();
             end
@@ -118,7 +118,7 @@ classdef JPMExpManager < handle
                     end
                 end
                 %Open data file
-%                 obj.dataFileHandler.open(obj.dataFileHeader, dataInfos, obj.saveVariances);
+                obj.dataFileHandler.open(obj.dataFileHeader, dataInfos);
             end
             
         end
@@ -166,9 +166,6 @@ classdef JPMExpManager < handle
                 sizes = [sizes 1];
             end
             % initialize data storage
-%             obj.data = structfun(@(x) struct('mean', complex(nan(sizes),nan(sizes)), 'realvar', nan(sizes), 'imagvar', nan(sizes), 'prodvar', nan(sizes)),...
-%                 obj.measurements, 'UniformOutput', false);
-%             
             obj.data = structfun(@(x) struct('counts', nan(sizes)), obj.measurements, 'UniformOutput', false );
             
             fprintf('Taking data....\n');
@@ -202,7 +199,6 @@ classdef JPMExpManager < handle
                         obj.take_data();
                         % pull data out of measurements
                         stepData = structfun(@(m) m.get_data(), obj.measurements, 'UniformOutput', false);
-%                         stepVar = structfun(@(m) m.get_var(), obj.measurements, 'UniformOutput', false);
                         for measName = fieldnames(stepData)'
                             if ~obj.measurements.(measName{1}).saved
                                 continue
@@ -216,11 +212,6 @@ classdef JPMExpManager < handle
                                 % assignment, we manually call subsasgn
                                 indexer = struct('type', '()', 'subs', {[num2cell(ct(1:end-1)), ':']});
                                 obj.data.(measName{1}).counts = subsasgn(obj.data.(measName{1}).counts, indexer, stepData.(measName{1}));
-%                                 if obj.saveVariances
-%                                     obj.data.(measName{1}).realvar = subsasgn(obj.data.(measName{1}).realvar, indexer, stepVar.(measName{1}).realvar);
-%                                     obj.data.(measName{1}).imagvar = subsasgn(obj.data.(measName{1}).imagvar, indexer, stepVar.(measName{1}).imagvar);
-%                                     obj.data.(measName{1}).prodvar = subsasgn(obj.data.(measName{1}).prodvar, indexer, stepVar.(measName{1}).prodvar);
-%                                 end
                             else
                                 % we have a single point
                                 indexer = struct('type', '()', 'subs', {num2cell(ct)});
@@ -229,7 +220,6 @@ classdef JPMExpManager < handle
                         end
                         plotResetFlag = all(ct == 1);
                         obj.plot_data(plotResetFlag);
-%                         obj.save_data(stepData, stepVar);
                         obj.save_data(stepData);
                     end
                 else
@@ -268,7 +258,7 @@ classdef JPMExpManager < handle
             delete(obj.plotScopeTimer);
             %clean up DataReady listeners
             cellfun(@delete, obj.listeners);
-            
+            delete(instrfind);
         end
         
         %Helper function to take data (basically, start/stop AWGs and
@@ -278,15 +268,16 @@ classdef JPMExpManager < handle
             %Clear all the measurement filters
             structfun(@(m) reset(m), obj.measurements);
             
-            %Ready the digitizers
-            cellfun(@(scope) acquire(scope), obj.scopes);
-            
+            %%Swapped this with the 'Ready the digitizers' below
             if(~obj.CWMode)
                 %Start the slaves up again
                 cellfun(@(awg) run(awg), obj.AWGs(2:end))
                 %And the master
                 run(obj.AWGs{1});
             end
+            
+            %Ready the digitizers
+            cellfun(@(scope) acquire(scope), obj.scopes);
             
             %Wait for data taking to finish
             obj.scopes{1}.wait_for_acquisition(obj.dataTimeout);
@@ -297,7 +288,7 @@ classdef JPMExpManager < handle
             end
         end
         
-        function save_data(obj, stepData, stepVar)
+        function save_data(obj, stepData)
             if isempty(obj.dataFileHandler) || obj.dataFileHandler.fileOpen == 0
                 return
             end
@@ -309,9 +300,6 @@ classdef JPMExpManager < handle
                 end
                 measData = squeeze(stepData.(measNames{ct}));
                 obj.dataFileHandler.write(measData, savect);
-                if obj.saveVariances
-                    obj.dataFileHandler.writevar(stepVar.(measNames{ct}), savect);
-                end
                 savect = savect + 1;
             end
         end
@@ -341,23 +329,6 @@ classdef JPMExpManager < handle
                 if isempty(measData)
                     continue;
                 end
-                
-%                 switch obj.measurements.(measName{1}).plotMode
-%                     case 'amp/phase'
-%                         toPlot = {plotMap.abs, plotMap.phase};
-%                         numRows = 2; numCols = 1;
-%                     case 'real/imag'
-%                         toPlot = {plotMap.real, plotMap.imag};
-%                         numRows = 2; numCols = 1;
-%                     case 'quad'
-%                         toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
-%                         numRows = 2; numCols = 2;
-%                     case 'normal'
-%                         toPlot = {plotMap.real};
-%                         numRows = 1; numCols = 1;
-%                     otherwise
-%                         toPlot = {};
-%                 end
                 
                 toPlot = {plotMap.counts};
                 numRows=1; numCols=1;

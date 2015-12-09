@@ -37,7 +37,7 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
         function setAll(obj, settings)
            obj.reps = settings.repititions;
            obj.segments = settings.segments;
-           obj.resetCount()
+           obj.resetCount();
         end
         
         function resetCount(obj)
@@ -93,6 +93,7 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
         
         function stop(obj)
             obj.done = true;
+            obj.resetCount();
             obj.disconnect(); 
         end
         
