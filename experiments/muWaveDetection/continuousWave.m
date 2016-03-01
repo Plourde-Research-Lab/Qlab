@@ -5,27 +5,33 @@ function continuousWave()
 % usage: >> continuousWave()
 %
 aps = APS();
-% ag = deviceDrivers.AgilentN5183A();
+ag = deviceDrivers.AgilentN5183A();
 % ag = deviceDrivers.AgilentE8257D();
 
-channelA = 1;
-channelB = 2;
+instrLibrary = json.read(getpref('qlab', 'CurScripterFile'));
+instrSettings = instrLibrary.instruments.('Scope');
+scope = InstrumentFactory('Scope', instrSettings);
+scope.setAll(instrSettings);
 
+scope
 
-% ag.connect(30);
+channelA = 3;
+channelB = 4;
+
+ag.connect(30);
 % aps.connect('A6001ixV');
 aps.connect('A6001nBT');
 aps.stop();
 
 % create the wave form
-ssbFreq = 13000000;
+ssbFreq = 10000000;
 waveformLength = 1200;
 
 tpts = (1/1200000000)*(0:(waveformLength-1));
 iwf = 0.5 * cos(2*pi*ssbFreq*tpts);
 qwf = -0.5 * sin(2*pi*ssbFreq*tpts);
-aps.setAmplitude(channelA, 1.0);
-aps.setAmplitude(channelB, 1.0);
+aps.setAmplitude(channelA, .5);
+aps.setAmplitude(channelB, .5);
 aps.setOffset(channelA, 0); 
 aps.setOffset(channelB, 0);
 aps.loadWaveform(channelA, qwf);
@@ -42,21 +48,29 @@ aps.setEnabled(channelB, true);
 
 aps.run()
 
-% ag.frequency = 8;
-% ag.power = 18.0;
-% ag.output = 1;
-% ag.pulse = 0;
+ag.frequency = 10;
+ag.power = 13.0;
+ag.output = 1;
+ag.pulse = 0;
+
+scope.acquire();
 
 % wait for user input
 % headbutt keyboard
 pause;
 
+scope.stop();
+
+figure;plot(scope.transfer_waveform(1));
+
 % shut things down
-% ag.output = 0;
-% ag.disconnect();
-% delete(ag);
+ag.output = 0;
+ag.disconnect();
+delete(ag);
 aps.stop();
 aps.disconnect();
 delete(aps);
+
+scope.disconnect;scope.delete;
 
 end

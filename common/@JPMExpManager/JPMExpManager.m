@@ -172,6 +172,7 @@ classdef JPMExpManager < handle
             
             % generic nested loop sweeper through "stack"
             while idx > 0 && ct(1) <= stops(1)
+
                 if ct(idx) < stops(idx)
                     ct(idx) = ct(idx) + 1;
                     if stops(idx) > 1
@@ -196,6 +197,7 @@ classdef JPMExpManager < handle
                     if idx < length(ct)
                         idx = idx + 1;
                     else % inner most loop... take data
+                        
                         obj.take_data();
                         % pull data out of measurements
                         stepData = structfun(@(m) m.get_data(), obj.measurements, 'UniformOutput', false);
@@ -258,13 +260,13 @@ classdef JPMExpManager < handle
             delete(obj.plotScopeTimer);
             %clean up DataReady listeners
             cellfun(@delete, obj.listeners);
-            delete(instrfind);
+            
         end
         
         %Helper function to take data (basically, start/stop AWGs and
         %digitizers)
         function take_data(obj)
-            
+
             %Clear all the measurement filters
             structfun(@(m) reset(m), obj.measurements);
             
@@ -278,7 +280,7 @@ classdef JPMExpManager < handle
             
             %Ready the digitizers
             cellfun(@(scope) acquire(scope), obj.scopes);
-            
+          
             %Wait for data taking to finish
             obj.scopes{1}.wait_for_acquisition(obj.dataTimeout);
             

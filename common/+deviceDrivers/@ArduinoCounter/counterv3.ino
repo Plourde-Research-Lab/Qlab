@@ -1,8 +1,8 @@
-template<class T> inline Print &operator <<(Print &obj, T arg) { 
+/*template<class T> inline Print &operator <<(Print &obj, T arg) { 
   obj.print(arg); 
   return obj;
 }
-
+*/
 #include <EEPROM.h>
 
 // processInput states
@@ -24,10 +24,12 @@ const byte RESET = 7;
 const byte UNKNOWN = -1;
 
 
-int count = 0;
+int count[1] = {0};
 int segments = 1;
 int reps = 1;
 int segmentMode = false;
+
+
 
 const boolean VERBOSE = false;
 
@@ -192,14 +194,14 @@ void resetCounter(){
   TCNT1 = 0;
 }
 
-int getCount(){
-  count = TCNT1;
+void getCount(){
+  count[0] = TCNT1;
   TCNT1=0;
-  return count;
 }
 
 void printCount(){
-  Serial.println(getCount(), DEC);
+  getCount();
+  Serial.write(count, 1);
 }
 
 void printOverflow() {

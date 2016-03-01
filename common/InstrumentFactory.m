@@ -11,7 +11,7 @@ function device = InstrumentFactory(name, instrSettings)
 
         %Pull out the instrument settings dictionary
         instrSettings = instrLibrary.instrDict.(name);
-        deviceClass = instrSettings.x__class__;
+        deviceClass = instrSettings.deviceName;
     else
         deviceClass = instrSettings.deviceName;
     end
@@ -19,5 +19,5 @@ function device = InstrumentFactory(name, instrSettings)
     import deviceDrivers.*
     device = eval(deviceClass);
     device.connect(instrSettings.address);
-
+%     device.setAll(instrSettings);
 end

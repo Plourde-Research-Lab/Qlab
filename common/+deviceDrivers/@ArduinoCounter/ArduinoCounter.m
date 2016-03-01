@@ -11,6 +11,7 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
         reps
         segments = 1
         settings
+%         trig = deviceDrivers.TekAFG3022B()
     end
     
     properties (Access = private)
@@ -29,30 +30,40 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
         function obj = ArduinoCounter()
             % Initialize Super class
             obj = obj@deviceDrivers.lib.Serial();
-            obj.baudRate = 115200;
+            obj.baudRate = 256000;
+            obj.bufferSize = 4096;
+%             obj.timeOut = 1;
             
 %             obj.data = zeros(1, obj.segments);
+%             obj.trig.connect('USB0::0x0699::0x0347::C033963::0::INSTR');
+        end
+        
+        function delete(obj)
+%             obj.trig.disconnect;
+            delete@deviceDrivers.lib.Serial(obj);
         end
         
         function setAll(obj, settings)
            obj.reps = settings.repititions;
            obj.segments = settings.segments;
            obj.resetCount();
+%            obj.trig.connect('USB0::0x0699::0x0347::C033963::0::INSTR');
+%            obj.trig.write(['SOURCE1:BURSt:NCYCLes ' num2str(obj.reps+100)]);
         end
         
         function resetCount(obj)
-            cmd = 'RESET';
+            cmd = 't'; %Reset Command
             obj.write(cmd)
         end
         
         function out = getCount(obj)
-           out = fscanf(obj.interface);
+           out = obj.read;
         end
         
         function acquire(obj)
             obj.data = [];
-            
-            if obj.segments == 1 %We are averaging one waveform
+          
+            if obj.segments == 1    %We are averaging one waveform
                 for index = 1:obj.reps
                    obj.data = [obj.data, str2double(obj.getCount())]; 
                 end
@@ -62,7 +73,10 @@ classdef (Sealed) ArduinoCounter < deviceDrivers.lib.Serial
                 while obj.avgct < obj.reps
                     obj.data = [];
                     for index = 1:obj.segments 
-                        obj.data = [obj.data, str2double(obj.getCount())];
+                        count = str2double(obj.getCount());
+                        display(['Counts ' num2str(count) 'Seg ' num2str(index)]);
+                        obj.data = [obj.data, count];
+%                         display(['Seg ' num2str(index)]);
                     end
                     obj.avgct = obj.avgct+1;
                     notify(obj, 'DataReady');

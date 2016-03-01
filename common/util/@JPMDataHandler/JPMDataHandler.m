@@ -298,7 +298,7 @@ classdef JPMDataHandler < handle
         
         function delete(obj)
             if obj.fileOpen
-                %H5F.close(obj.FID);
+                H5F.close(obj.FID);
             end
         end
     end

@@ -376,9 +376,6 @@ classdef ExpManager < handle
                     case 'quad'
                         toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
                         numRows = 2; numCols = 2;
-                    case 'normal'
-                        toPlot = {plotMap.real};
-                        numRows = 1; numCols = 1;
                     otherwise
                         toPlot = {};
                 end

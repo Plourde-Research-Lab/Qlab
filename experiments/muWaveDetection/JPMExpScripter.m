@@ -3,10 +3,16 @@ function JPMExpScripter(expName)
 
 exp = JPMExpManager();
 
-deviceName = 'JPM';
+deviceName = 'Contrast';
 exp.dataFileHandler = JPMDataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+
+% if contrast=='bright'
+%     expSettings = json.read('C:\Users\Caleb\Development\pyqlab\BrightExpSettings.json');
+% else
+%     expSettings = json.read('C:\Users\Caleb\Development\pyqlab\DarkExpSettings.json');
+    
 exp.dataFileHeader = expSettings;
 exp.CWMode = expSettings.CWMode;
 instrSettings = expSettings.instruments;
@@ -18,6 +24,7 @@ for instrument = fieldnames(instrSettings)'
     instr = InstrumentFactory(instrument{1}, instrSettings.(instrument{1}));
     add_instrument(exp, instrument{1}, instr, instrSettings.(instrument{1}));
 end
+
 
 for sweep = fieldnames(sweepSettings)'
     add_sweep(exp, sweepSettings.(sweep{1}).order, SweepFactory(sweepSettings.(sweep{1}), exp.instruments));
