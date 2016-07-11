@@ -9,20 +9,20 @@ end
 % construct minimal cfg file
 ExpParams = struct();
 ExpParams.Qubit = qubit;
-
-ExpParams.measurement = ['M' qubit(end) '_KernelIntegrator'];
+% ExpParams.measurement = ['M' qubit(end) 'KernelIntegrator'];
+ExpParams.measurement = 'M1_KernelIntegrator';
 ExpParams.DoMixerCal = 0;
-ExpParams.DoRabiAmp = 0;
+ExpParams.DoRabiAmp = 1;
 ExpParams.DoRamsey = 0;
 ExpParams.Ramsey2f = 0;
 ExpParams.RamseyStop = 60000; %in ns
 ExpParams.NumRamseySteps = 101;
 ExpParams.NumPi2s = 8;
 ExpParams.DoPi2Cal = 1;
-ExpParams.DoPi2PhaseCal = 1;
+ExpParams.DoPi2PhaseCal = 0;
 ExpParams.NumPis = 8;
 ExpParams.DoPiCal = 1;
-ExpParams.DoPiPhaseCal = 1;
+ExpParams.DoPiPhaseCal = 0;
 ExpParams.DoDRAGCal = 0;
 ExpParams.DRAGparams = linspace(-1,1,11);
 ExpParams.DoSPAMCal = 0;

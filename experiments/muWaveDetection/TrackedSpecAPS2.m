@@ -5,7 +5,7 @@ import MeasFilters.*
 
 exp = ExpManager();
 
-deviceName = 'MH076_LOREAL';
+deviceName = 'MH07%_PREDIE';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
@@ -24,10 +24,10 @@ end
 
 cavitySweepSettings = struct(...
     'genID', 'TopAgilentE8257D',...
-    'start', 7.17350,...
-    'stop', 7.17650,...
-    'step', 0.00005,...
-    'offset', 0.00000);
+    'start', 7.167200,...
+    'stop', 7.169500,...
+    'step', 0.00002,...
+    'offset', 0.00002);
 
 add_sweep(exp, 1, SweepFactory(sweepSettings.DC, exp.instruments), rebias_cavity_callback(cavitySweepSettings));
 add_sweep(exp, 2, SweepFactory(sweepSettings.Frequency, exp.instruments));
@@ -80,7 +80,7 @@ function fcn = rebias_cavity_callback(settings)
         for ct = 1:length(freqPts)
             exp.instruments.(genID).frequency = freqPts(ct);
             exp.take_data();
-            data(ct) = exp.measurements.M1_KernalIntegrator.get_data();
+            data(ct) = exp.measurements.M1_KernelIntegrator.get_data();
             plot(ampHandle, freqPts(1:ct), abs(data(1:ct)));
             ylabel('Amp');
             plot(phaseHandle, freqPts(1:ct), (180/pi)*angle(data(1:ct)));

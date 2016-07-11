@@ -1,12 +1,13 @@
 % timeDomain
-function ExpScripter(expName)
+function ExpScripter2(expName,file)
 
 exp = ExpManager();
 
 deviceName = 'CH025_JPMQubitV3';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
-expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+%expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+expSettings = json.read(file);
 exp.dataFileHeader = expSettings;
 exp.CWMode = expSettings.CWMode;
 instrSettings = expSettings.instruments;

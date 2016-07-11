@@ -57,6 +57,10 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIB
             val = obj.query(cmd);
         end
         % setters
+        
+        function obj = set.channel(obj, value)
+           obj.channel = value; 
+        end
         function obj = set.value(obj, value)
             cmd = sprintf('SNDT %d,"VOLT %d"',obj.channel, value);
             obj.write(cmd);
