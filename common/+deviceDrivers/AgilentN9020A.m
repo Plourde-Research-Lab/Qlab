@@ -202,8 +202,9 @@ classdef AgilentN9020A < deviceDrivers.lib.GPIBorEthernet
             %fprintf(interface,':INIT:CONT OFF');
 
             % Trigger the sweep and wait for it to complete
-            %fprintf(interface,':INIT:IMM');
-            %opc=query(interface,'*OPC?');
+
+            fprintf(interface,':INIT:IMM');
+            opc=query(interface,'*OPC?');
 
             % Get the data back
             fprintf(interface,':TRACE:DATA? TRACE1');
@@ -217,8 +218,9 @@ classdef AgilentN9020A < deviceDrivers.lib.GPIBorEthernet
             CF = str2double(query(interface,':FREQ:CENT?'));
             StartF = CF-SPAN/2;
             dF=SPAN./1000;
-            freq=zeros(SP,1);
-            for n=1:SP
+            
+            freq=zeros(SP+1,1);
+            for n=1:SP+1
                 freq(n)=StartF+(n-1)*dF;
             end
             
