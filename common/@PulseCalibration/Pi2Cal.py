@@ -8,6 +8,7 @@ parser.add_argument('numPulses', type=int, help='maximum number of 90s')
 parser.add_argument('pi2Amp', type=float, help='pi2Amp')
 args = parser.parse_args()
 
+
 sys.path.append(args.pyqlabpath)
 execfile(os.path.join(args.pyqlabpath, 'startup.py'))
 

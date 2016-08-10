@@ -1,13 +1,20 @@
-function [bins, PDFvec, data_con, rhoa,rhob]=fast_tomo(cond, threshold)
+function [bins, PDFvec, data_con, rhoa,rhob]=fast_tomo(cond, threshold, opcode, varargin)
 %load tomo from single shots, postselect on ancilla
 %cond = 1,-1,0 for conditioned (>, <), unconditioned
 %threshold = ancilla value for postselection.
-numSegments = 48; %including calibrations (data + ancilla)
-ASegments = [45;47]; %segments with A in 0 and 1, used to find opt. threshold
-calSegments = 12; %number of calibrations
+numSegmentsvec = [44,46];
+ASegmentsvec = [[37;41],[45;46]];
+calSegmentsvec = [8,10];
+numSegments = numSegmentsvec(opcode); %44; %including calibrations (data + ancilla)
+ASegments = ASegmentsvec(:,opcode); %[37;41]; %segments with A in 0 and 1, used to find opt. threshold
+calSegments = calSegmentsvec(opcode); %8; %%number of calibrations
 numTomo = 44; %subset of segments with tomography + calibrations (not including ancilla)
 
-data=load_data('latest');
+if ~isempty(varargin)
+    data = load_data(varargin{1});
+else
+    data=load_data('latest');
+end
 alldata=reshape_cells(data);
 if cond~=0
     docond=1;

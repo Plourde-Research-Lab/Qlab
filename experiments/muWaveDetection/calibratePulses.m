@@ -16,6 +16,7 @@ ExpParams.DoRabiAmp = 1;
 ExpParams.DoRamsey = 0;
 ExpParams.Ramsey2f = 0;
 ExpParams.RamseyStop = 60000; %in ns
+ExpParams.RamseyDetuning =  -150; %in kHz
 ExpParams.NumRamseySteps = 101;
 ExpParams.NumPi2s = 8;
 ExpParams.DoPi2Cal = 1;
@@ -32,6 +33,10 @@ ExpParams.dataType = 'real'; %'amp', 'phase', 'real', or 'imag';
 
 ExpParams.cfgFile = getpref('qlab', 'CurScripterFile');
 ExpParams.SoftwareDevelopmentMode = 0;
+
+%optional logging of frequency and amplitudes over time
+ExpParams.dolog = false;
+ExpParams.calpath = 'C:\Users\qlab\Documents\data\Cal_Logs';
 
 if nargin>1 %updates ExpParams with optional input settings
 %Remove overlapping fields from default ExpParams
