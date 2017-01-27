@@ -25,6 +25,7 @@ ExpParams.NumPis = 8;
 ExpParams.DoPiCal = 1;
 ExpParams.DoPiPhaseCal = 0;
 ExpParams.DoDRAGCal = 0;
+ExpParams.DoDRAGCal2 = 0;
 ExpParams.DRAGparams = linspace(-1,1,11);
 ExpParams.DoSPAMCal = 0;
 ExpParams.OffsetNorm = 6;

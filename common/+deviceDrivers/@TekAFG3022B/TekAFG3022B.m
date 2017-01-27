@@ -1,4 +1,4 @@
-classdef (Sealed) TekAFG3022B <  deviceDrivers.lib.GPIBorVISA
+classdef (Sealed) TekAFG3022B <  deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.GPIBorVISA
     % Tektronix arbitrary function generator
     %
     %
@@ -9,8 +9,8 @@ classdef (Sealed) TekAFG3022B <  deviceDrivers.lib.GPIBorVISA
     properties (Access = public)
         output
         channel = 2
-        width = 100
-        amp = 1
+        width = 100e-9
+        value = 1
     end % end device properties
     
     methods
@@ -21,24 +21,25 @@ classdef (Sealed) TekAFG3022B <  deviceDrivers.lib.GPIBorVISA
         
         function setAll(obj, settings)
             obj.channel = settings.channel;
-            obj.write(['TRIG:SOURce EXT'])
+%             obj.write(['TRIG:SOURce EXT'])
             obj.write(['SOURce' obj.channel ':VOLTage:LEVel:IMMediate:LOW 0mV'])
             obj.write(['SOURce' obj.channel ':FUNC PULS'])
             obj.write(['SOURce' obj.channel ':BURSt 1'])
             obj.write(['SOURce' obj.channel ':BURSt:NCYCles 1'])
             obj.set('width', settings.width);
-            obj.set('amp', settings.amp);
+            obj.set('value', settings.value);
             
         end
         
         function obj = set.width(obj, value)
             assert(isnumeric(value), 'Requires numeric input');
-            obj.write(['SOURce' obj.channel ':PULSe:WIDTh ' value 'US'])   
+            obj.write(['SOURce' num2str(obj.channel) ':PULSe:WIDTh ' num2str(value) 'nS'])   
         end
         
-        function obj = set.amp(obj, value)
+        function obj = set.value(obj, value)
             assert(isnumeric(value), 'Requires numeric input');
-            obj.write(['SOURce' obj.channel ':VOLTage:LEVel:IMMediate:HIGH ' value 'V']);
+            obj.write(['SOURce' num2str(obj.channel) ':VOLTage:LEVel:IMMediate:HIGH '  num2str(value) 'V']);
+            
         end
     end
     
