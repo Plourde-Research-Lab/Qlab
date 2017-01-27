@@ -10,15 +10,18 @@ args = parser.parse_args()
 
 from QGL import *
 from QGL.drivers import APS2Pattern
+from QGL import config
 
 qubits = ChannelLibrary.channelLib.connectivityG.nodes()
 edges = ChannelLibrary.channelLib.connectivityG.edges()
 
 pulseList = []
 for q in qubits:
-	pulseList.append([X(q), X90(q), Y(q), Y90(q)])
+	if config.pulse_primitives_lib == 'standard':
+		pulseList.append([AC(q, ct) for ct in range(24)])
+	else:
+		pulseList.append([X90(q), Y90(q), X90m(q), Y90m(q)])
 for edge in edges:
 	pulseList.append(ZX90_CR(edge[0],edge[1]))
-#print pulseList
 #update waveforms in the desired sequence (generated with APS2Pattern.SAVE_WF_OFFSETS = True)
 PatternUtils.update_wf_library(pulseList, os.path.normpath(os.path.join(args.seqPath, args.seqName)))
