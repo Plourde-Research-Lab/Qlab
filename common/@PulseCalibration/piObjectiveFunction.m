@@ -4,8 +4,8 @@ function [cost, J] = piObjectiveFunction(obj, x, direction)
     fprintf('piAmp: %.4f, offset: %.4f\n', piAmp, offset);
     % create sequence
     obj.channelParams.piAmp = piAmp;
-    [filenames segmentPoints] = obj.PiCalChannelSequence(obj.settings.Qubit, direction, obj.settings.NumPis);
-    
+    [metainfo, segmentPoints] = obj.PiCalChannelSequence(obj.settings.Qubit, direction, obj.settings.NumPis);
+
     % set channel offset
     switch direction
         case 'X'
@@ -18,10 +18,10 @@ function [cost, J] = piObjectiveFunction(obj, x, direction)
     if ~obj.testMode
         obj.channelParams.(chan) = offset;
         % load sequence
-        obj.loadSequence(filenames, 1);  
+        obj.loadSequence(metainfo);
 
     end
-    
+
     % measure
     if ~obj.testMode
         data = obj.take_data(segmentPoints);
@@ -31,7 +31,7 @@ function [cost, J] = piObjectiveFunction(obj, x, direction)
         ylim([-.21 .21])
         pause(.1);
     end
-    
+
     % evaluate cost
     [cost, J, obj.noiseVar] = obj.RepPulseCostFunction(data, pi, obj.settings.NumPis);
 
@@ -47,16 +47,16 @@ end
 function data = simulateMeasurement(x, offset2amp, offsetNorm)
     idealAmp = 0.69;
     idealOffset = .081;
-    
+
     amp = x(1);
     offset = x(2);
-    
+
     offsetError = offsetNorm*offset2amp*(offset - idealOffset);
     ampError = (amp + offsetError - idealAmp)/idealAmp;
     ampError2 = (amp - offsetError - idealAmp)/idealAmp;
     angleError = ampError*pi;
     angleError2 = ampError2*pi;
-    
+
     % data representing amplitude error
     n = 1:9;
     scale = 0.2;

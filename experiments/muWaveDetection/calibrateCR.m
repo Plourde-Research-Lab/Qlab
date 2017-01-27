@@ -1,16 +1,18 @@
 function [optlen, optphase, contrast, optamp] = calibrateCR(control, target, CR, chan, lenstep, varargin)
 %function to calibrate length and phase of CR pulse. It assumes that the
-%sequence EchoCR is loaded. Need to change it to load all sequences. 
-%optional arguments: 
-% - expSettings 
+%sequence EchoCR is loaded. Need to change it to load all sequences.
+%optional arguments:
+% - expSettings
 % - calSteps: calibration types. A list of 0,1 to calibrate [a,b,c], with a = length,
 % b = phase, c = amplitude
 p = inputParser;
 addParameter(p,'expSettings', json.read(getpref('qlab', 'CurScripterFile')), @isstruct)
 addParameter(p,'calSteps', [1,1,0])
+addParameter(p,'amplitude',0.8)
 parse(p, varargin{:});
 expSettings = p.Results.expSettings;
 calSteps = p.Results.calSteps;
+amplitude = p.Results.amplitude;
 
 optphase = NaN;
 contrast = NaN;
@@ -22,6 +24,7 @@ CalParams.target = target;
 CalParams.CR = CR;
 CalParams.channel = chan; %meas. channel for target qubit
 CalParams.lenstep = lenstep; %step in length calibration (in ns)
+CalParams.amp = amplitude; %starting pulse amplitude
 
 warning('off', 'json:fieldNameConflict');
 chanSettings = json.read(getpref('qlab', 'ChannelParamsFile'));
@@ -59,50 +62,31 @@ for measname = fieldnames(expSettings.measurements)'
     end
 end
 
-expSettings.sweeps={};
-expSettings.sweeps.SegmentNumWithCals={};
-expSettings.sweeps.SegmentNumWithCals.order=1;
-expSettings.sweeps.SegmentNumWithCals.type='SegmentNum';
-expSettings.sweeps.SegmentNumWithCals.numPoints = 46;
-expSettings.sweeps.SegmentNumWithCals.numCals = 8;
+expSettings.instruments = instrSettings;
+expSettings.saveAllSettings = false;
 
 if calSteps(1)
     %create a sequence with desired range of CR pulse lengths
-    CRCalSequence(CalParams.control, CalParams.target, 1, CalParams.lenstep)
-    
-    %updates sweep settings
-    expSettings.sweeps.SegmentNumWithCals.start = CalParams.lenstep;
-    expSettings.sweeps.SegmentNumWithCals.stop = CalParams.lenstep*38;
-    expSettings.sweeps.SegmentNumWithCals.step = (expSettings.sweeps.SegmentNumWithCals.stop-expSettings.sweeps.SegmentNumWithCals.start)/(expSettings.sweeps.SegmentNumWithCals.numPoints-expSettings.sweeps.SegmentNumWithCals.numCals-1);
-    expSettings.sweeps.SegmentNumWithCals.axisLabel = 'Pulse top length (ns)';
-    
-    expSettings.instruments = instrSettings;
-    expSettings.saveAllSettings = false;
-    
+    CRCalSequence(CalParams.control, CalParams.target, 1, CalParams.lenstep, CalParams.amp)  
+
     %run the sequence
-    ExpScripter2('CRcal_len', expSettings, 'lockSegments');
-    
+    ExpScripter2('CRcal_len', expSettings, 'EchoCR/EchoCR');
+
     %analyze the sequence and updates CR pulse
     data=load_data('latest');
-    optlen = analyzeCalCR(1,data,CalParams.channel, CalParams.CR);
+    optlen = analyzeCalCR(1,data,CalParams.channel, CalParams.CR)*1e3;
 else
     optlen = chanSettings.(CR).pulseParams.length*1e9;
 end
 
 if calSteps(2)
     %create a sequence with calibrated length and variable phase
-    
-    CRCalSequence(CalParams.control, CalParams.target, 2, optlen)
-    
-    %updates sweep settings
-    expSettings.sweeps.SegmentNumWithCals.start = 0;
-    expSettings.sweeps.SegmentNumWithCals.stop = 720;
-    expSettings.sweeps.SegmentNumWithCals.step = (expSettings.sweeps.SegmentNumWithCals.stop-expSettings.sweeps.SegmentNumWithCals.start)/(expSettings.sweeps.SegmentNumWithCals.numPoints-expSettings.sweeps.SegmentNumWithCals.numCals-1);
-    expSettings.sweeps.SegmentNumWithCals.axisLabel = 'Pulse phase (deg)';
-    
+
+    CRCalSequence(CalParams.control, CalParams.target, 2, optlen, CalParams.amp)
+
     %run the sequence
-    ExpScripter2('CRcal_ph', expSettings, 'lockSegments');
-    
+    ExpScripter2('CRcal_ph', expSettings, 'EchoCR/EchoCR');
+
     %analyze the sequence and updates CR pulse
     data=load_data('latest');
     [optphase, contrast] = analyzeCalCR(2,data,CalParams.channel,CalParams.CR);
@@ -110,21 +94,22 @@ end
 
 if calSteps(3)
     %create a sequence with desired range of CR pulse amplitudes
-    CRCalSequence(CalParams.control, CalParams.target, 3, optlen)
-    
-    %updates sweep settings;
-    expSettings.sweeps.SegmentNumWithCals.start = 0.6;
-    expSettings.sweeps.SegmentNumWithCals.stop = 1.4;
-    expSettings.sweeps.SegmentNumWithCals.step = (expSettings.sweeps.SegmentNumWithCals.stop-expSettings.sweeps.SegmentNumWithCals.start)/(expSettings.sweeps.SegmentNumWithCals.numPoints-expSettings.sweeps.SegmentNumWithCals.numCals-1);
-    expSettings.sweeps.SegmentNumWithCals.axisLabel = 'Pulse amplitude (V)';
-    
-    expSettings.instruments = instrSettings;
-    expSettings.saveAllSettings = false;
-    
+    CRCalSequence(CalParams.control, CalParams.target, 3, optlen, CalParams.amp)
+
     %run the sequence
-    ExpScripter2('CRcal_amp', expSettings, 'lockSegments');
-    
+    ExpScripter2('CRcal_amp', expSettings, 'EchoCR/EchoCR');
+
     %analyze the sequence and updates CR pulse
     data=load_data('latest');
     optamp = analyzeCalCR(3,data,CalParams.channel, CalParams.CR);
+    
+    calpath = fullfile(getpref('qlab','dataDir'),'Cal_Logs');
+    expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+    warning('off', 'json:fieldNameConflict');
+    chanSettings = json.read(getpref('qlab', 'ChannelParamsFile'));
+    warning('on', 'json:fieldNameConflict');
+    CRcalvec = [optlen, optphase, optamp];
+    CRfile = fopen(fullfile(calpath, ['CRvec_' control(2) target(2) '.csv']), 'at');
+    fprintf(CRfile, '%s\t%.4f\t%.4f\t%.4f\n', datestr(now,31), CRcalvec(1), CRcalvec(2), CRcalvec(3));
+    fclose(CRfile);
 end
