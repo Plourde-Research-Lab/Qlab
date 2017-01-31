@@ -17,7 +17,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 
-classdef digitalMeasFilter < handle
+classdef DigitalMeasFilter < handle
     
     properties
         label
@@ -30,7 +30,7 @@ classdef digitalMeasFilter < handle
         scopeavgct = 0
         plotScope = false
         scopeHandle
-%         plotMode = 'amp/phase' %allowed enums are 'amp/phase', 'real/imag', 'quad'
+        plotMode = 'data' %allowed enums are 'amp/phase', 'real/imag', 'quad'
         axesHandles
         plotHandles
         saved = true
@@ -46,7 +46,7 @@ classdef digitalMeasFilter < handle
     end
     
     methods
-        function obj = digitalMeasFilter(label, settings)
+        function obj = DigitalMeasFilter(label, settings)
             obj.label = label;
             % MeasFilter(settings)
             if isfield(settings, 'plotScope')
@@ -81,15 +81,11 @@ classdef digitalMeasFilter < handle
             if (ndims(obj.latestData) == 4) || (ndims(obj.latestData) == 3)
                 tmpData = squeeze(mean(mean(obj.latestData, 4), 2));
                 tmpVar = struct();
-                tmpVar.real = squeeze(sum(sum(real(obj.latestData).^2, 4), 2));
-                tmpVar.imag = squeeze(sum(sum(imag(obj.latestData).^2, 4), 2));
-                tmpVar.prod = squeeze(sum(sum(real(obj.latestData).*imag(obj.latestData), 4), 2));
+                tmpVar.data = squeeze(sum(sum(obj.latestData.^2, 4), 2));
                 obj.varct = obj.varct + size(obj.latestData,2)*size(obj.latestData,4);
             else
                 tmpData = obj.latestData;
-                tmpVar.real = real(obj.latestData).^2;
-                tmpVar.imag = imag(obj.latestData).^2;
-                tmpVar.prod = imag(obj.latestData).*real(obj.latestData);
+                tmpVar.data = obj.latestData.^2;
                 obj.varct = obj.varct + 1;
             end
             
@@ -98,9 +94,7 @@ classdef digitalMeasFilter < handle
                 obj.accumulatedVar = tmpVar;
             else
                 obj.accumulatedData = obj.accumulatedData + tmpData;
-                obj.accumulatedVar.real = obj.accumulatedVar.real + tmpVar.real;
-                obj.accumulatedVar.imag = obj.accumulatedVar.imag + tmpVar.imag;
-                obj.accumulatedVar.prod = obj.accumulatedVar.prod + tmpVar.prod;
+                obj.accumulatedVar.data = obj.accumulatedVar.data + tmpVar.data;
             end
             obj.avgct = obj.avgct + 1;
         end
@@ -112,31 +106,32 @@ classdef digitalMeasFilter < handle
         function out = get_var(obj)
             out = struct();
             if ~isempty(obj.accumulatedVar)
-                out.realvar = obj.accumulatedVar.real/(obj.varct) - real(get_data(obj)).^2;
-                out.imagvar = obj.accumulatedVar.imag/(obj.varct) - imag(get_data(obj)).^2;
-                out.prodvar = obj.accumulatedVar.prod/(obj.varct) - real(get_data(obj)).*imag(get_data(obj));
+                out.realvar = obj.accumulatedVar.data/(obj.varct) - get_data(obj).^2;
             end
         end
         
         function plot(obj, figH)
             %Given a figure handle plot the most recent data
             plotMap = struct();
-            plotMap.abs = struct('label','Amplitude', 'func', @abs);
-            plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
-            plotMap.real = struct('label','Real Quad.', 'func', @real);
-            plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
-            
+%             plotMap.abs = struct('label','Amplitude', 'func', @abs);
+%             plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
+%             plotMap.real = struct('label','Real Quad.', 'func', @real);
+%             plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
+            plotMap.data = struct('label', 'Data', 'func', @(x) x);
             
             switch obj.plotMode
-                case 'amp/phase'
-                    toPlot = {plotMap.abs, plotMap.phase};
-                    numRows = 2; numCols = 1;
-                case 'real/imag'
-                    toPlot = {plotMap.real, plotMap.imag};
-                    numRows = 2; numCols = 1;
-                case 'quad'
-                    toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
-                    numRows = 2; numCols = 2;
+%                 case 'amp/phase'
+%                     toPlot = {plotMap.abs, plotMap.phase};
+%                     numRows = 2; numCols = 1;
+%                 case 'real/imag'
+%                     toPlot = {plotMap.real, plotMap.imag};
+%                     numRows = 2; numCols = 1;
+%                 case 'quad'
+%                     toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
+%                     numRows = 2; numCols = 2;
+                case 'data'
+                    toPlot = {plotMap.data};
+                    numRows = 1; numCols = 1;
                 otherwise
                     toPlot = {};
             end
