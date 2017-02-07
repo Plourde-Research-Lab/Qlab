@@ -57,10 +57,10 @@ classdef PulseCalibration < handle
                         obj.experiment.scopes{scopeind}.averager = averagerSettings;
                         obj.experiment.scopes{scopeind}.acquireMode = 'digitizer';
                     case 'deviceDrivers.AgilentAP240' 
-                        averagerSettings = obj.experiment.scopes{scopeind}.averager;
+                        averagerSettings = obj.experiment.scopes{scopeind}.settings.averager;
                         averagerSettings.nbrSegments = length(segmentPoints);
                         obj.experiment.scopes{scopeind}.averager = averagerSettings;
-                        obj.experiment.scopes{scopeind}.acquireMode = 'digitizer';
+                        obj.experiment.scopes{scopeind}.acquireMode = 'averager';
                     case 'X6'
                         x6 = obj.experiment.scopes{scopeind};
                         set_averager_settings(x6, x6.recordLength, length(segmentPoints), x6.nbrWaveforms, x6.nbrRoundRobins);
@@ -223,7 +223,7 @@ classdef PulseCalibration < handle
                 %from hanging waiting for a possibly absent trigger
                 for instrName = fieldnames(obj.experiment.instruments)'
                     instr = obj.experiment.instruments.(instrName{1});
-                    if((isa(instr,'X6') || isa(instr,'deviceDrivers.AlazarATS9870')) && ~strcmp(curFilter.dataSource, instrName{1}))
+                    if((isa(instr,'X6') || isa(instr,'deviceDrivers.AlazarATS9870') || isa(instr, 'deviceDrivers.AgilentAP240')) && ~strcmp(curFilter.dataSource, instrName{1}))
                         obj.experiment.remove_instrument(instrName{1})
                     end
                 end
