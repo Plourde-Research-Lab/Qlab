@@ -1,4 +1,4 @@
-% Module Name : SIM928.m
+ % Module Name : SIM928.m
 %
 % Author/Date : Matthew Ware 04/14/14
 %
@@ -25,7 +25,7 @@
 classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIB
     properties (Access = public)
         output
-        channel
+        channel = 3;
         value
         frequency  	% defined in deviceDrivers.lib.uWSource
         power      	% defined in deviceDrivers.lib.uWSource
@@ -37,7 +37,6 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
     end % end device properties
     methods
         function obj = SIM928()
-            obj.channel = 3; % default channel
         end
         function reset(obj)
             obj.write('SRST');
@@ -62,7 +61,7 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
            obj.channel = value; 
         end
         function obj = set.value(obj, value)
-            cmd = sprintf('SNDT %d,"VOLT %d"',obj.channel, value);
+            cmd = sprintf('SNDT %d,"VOLT %d"', obj.channel, value);
             obj.write(cmd);
         end
         function obj = set.output(obj, value)

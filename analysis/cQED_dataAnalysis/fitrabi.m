@@ -30,7 +30,8 @@ xdata_finer = xdata_finer(:);
 rabif = inline('p(1) + p(2)*exp(-tdata/p(3)).*cos(p(4)*tdata + p(5))','p','tdata');
 
 % initial guess for amplitude is y(max) - mean
-amp = y(max) - mean(y);
+%amp = y(max) - mean(y);
+amp = max(y) - mean(y);
 
 % initial guess for Rabi time is length/3
 trabi = max(xdata)/3.;
