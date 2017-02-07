@@ -6,11 +6,11 @@ function continuousWave()
 %
 aps = APS();
 
-ag = deviceDrivers.AgilentN5183A();
-% ag = deviceDrivers.AgilentE8257D();
+% ag = deviceDrivers.Agilent();
+ag = deviceDrivers.AgilentE8257D();
 
 
-ag.connect(30);
+ag.connect(6);
 
 aps.connect('A6001ixV');
 aps.stop();
@@ -41,7 +41,7 @@ aps.setEnabled(4, true);
 
 aps.run()
 
-ag.frequency = 8;
+ag.frequency = 6;
 ag.power = 18.0;
 ag.output = 1;
 ag.pulse = 0;
