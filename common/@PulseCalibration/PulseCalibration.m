@@ -28,7 +28,7 @@ classdef PulseCalibration < handle
         AWGSettings
         testMode = false
         noiseVar % estimated variance of the noise from repeats
-        numShots % also participates in noise variance estimate
+        numShots = 1 % also participates in noise variance estimate
         finished = false
         initialParams
         singleScope = true
@@ -125,9 +125,9 @@ classdef PulseCalibration < handle
         end
 
         function stop = LMStoppingCondition(obj, ~, optimValues, ~)
-            %Assume that if the variance of the residuals is less than some 
+            %Assume that if the variance of the residuals is less than some
             %multiple of the variance of the noise then we are as good as it gets
-            %Anecdotally 2-3 seems to be reasonable 
+            %Anecdotally 2-3 seems to be reasonable
             if var(optimValues.residual) < 3*obj.noiseVar
                 stop = true;
             else
@@ -268,19 +268,9 @@ classdef PulseCalibration < handle
             obj.PulseCalibrationDo();
         end
         
-        function filenames = getAWGFileNames(obj, basename)
-            pathAWG = fullfile(getpref('qlab', 'awgDir'), basename);
-            awgNames = fieldnames(obj.AWGs)';
-            for awgct = 1:length(awgNames)
-                switch class(obj.AWGs.(awgNames{awgct}))
-                    case 'deviceDrivers.Tek5014'
-                        filenames{awgct} = fullfile(pathAWG, [basename '-' awgNames{awgct}, '.awg']);
-                    case {'deviceDrivers.APS', 'APS2','APS'}
-                        filenames{awgct} = fullfile(pathAWG, [basename '-' awgNames{awgct}, '.h5']);
-                    otherwise
-                        error('Unknown AWG type.');
-                end
-            end
+        function meta = getMetaInfo(obj, basename)
+            filename = fullfile(getpref('qlab', 'awgDir'), basename, [basename '-meta.json']);
+            meta = json.read(filename);
         end
 
         function cleanup(obj)
