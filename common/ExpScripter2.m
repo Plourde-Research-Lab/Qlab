@@ -7,7 +7,7 @@ function ExpScripter2(expName, varargin)
 tic;
 exp = ExpManager();
 
-deviceName = 'IBMv11_2037W3';
+deviceName = 'LH-TLwsidecavFeb17';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
 

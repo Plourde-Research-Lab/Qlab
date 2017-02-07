@@ -51,7 +51,12 @@ classdef PulseCalibration < handle
             % digitizer mode to return the variance
             for scopeind = 1:length(obj.experiment.scopes)
                 switch class(obj.experiment.scopes{scopeind})
-                    case 'deviceDrivers.AlazarATS9870'
+                    case 'deviceDrivers.AlazarATS9870' 
+                        averagerSettings = obj.experiment.scopes{scopeind}.averager;
+                        averagerSettings.nbrSegments = length(segmentPoints);
+                        obj.experiment.scopes{scopeind}.averager = averagerSettings;
+                        obj.experiment.scopes{scopeind}.acquireMode = 'digitizer';
+                    case 'deviceDrivers.AgilentAP240' 
                         averagerSettings = obj.experiment.scopes{scopeind}.averager;
                         averagerSettings.nbrSegments = length(segmentPoints);
                         obj.experiment.scopes{scopeind}.averager = averagerSettings;
@@ -161,7 +166,7 @@ classdef PulseCalibration < handle
             ct = 0;
             while (true)
                 ct = ct+1;
-                if strcmp(instrSettings.(instrNames{ct}).deviceName, 'AlazarATS9870') || strcmp(instrSettings.(instrNames{ct}).deviceName, 'X6')
+                if strcmp(instrSettings.(instrNames{ct}).deviceName, 'AlazarATS9870') || strcmp(instrSettings.(instrNames{ct}).deviceName, 'X6') || strcmp(instrSettings.(instrNames{ct}).deviceName, 'AgilentAP240')
                     obj.numShots = instrSettings.(instrNames{ct}).averager.nbrRoundRobins * instrSettings.(instrNames{ct}).averager.nbrWaveforms;
                     break;
                 end
