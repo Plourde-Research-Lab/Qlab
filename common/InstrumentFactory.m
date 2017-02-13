@@ -19,5 +19,5 @@ function device = InstrumentFactory(name, instrSettings)
     import deviceDrivers.*
     device = eval(deviceClass);
     device.connect(instrSettings.address);
-
+    device.setAll(instrSettings);
 end
