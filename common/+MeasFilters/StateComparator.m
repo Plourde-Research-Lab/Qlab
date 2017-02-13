@@ -39,7 +39,7 @@ classdef StateComparator < MeasFilters.MeasFilter
             end
             sumdata = sum(data(1:obj.integrationTime,:,:,:), 1);
             % better to cast to int32, but need to update the data file handler to support it
-            obj.latestData = double(real(sumdata) > obj.threshold) + 1j*double(imag(sumdata) > obj.threshold);
+%             obj.latestData = double(real(sumdata) > obj.threshold) + 1j*double(imag(sumdata) > obj.threshold);
             obj.latestData = double(abs(sumdata) > obj.threshold);
             accumulate(obj);
             notify(obj, 'DataReady');
