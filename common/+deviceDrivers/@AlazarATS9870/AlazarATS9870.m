@@ -13,10 +13,12 @@ classdef AlazarATS9870 < deviceDrivers.lib.deviceDriverBase
         %The single-shot or averaged data (depending on the acquireMode)
         data
         
-        %Acquire mode controls whether we return single-shot results or
-        %averaged data
+        %Acquire mode controls whether we return single-shot results,
+        %averaged data, or thresholded and then averaged data.
         acquireMode = 'averager';
         
+        threshold = 0;
+        testprop
         %How long to wait for a buffer to fill (seconds)
         timeOut = 30;
         lastBufferTimeStamp = 0;
@@ -234,12 +236,15 @@ classdef AlazarATS9870 < deviceDrivers.lib.deviceDriverBase
                 obj.initializeProcessing = false;
                 obj.bufferct = 0;
                 
-                if strcmp(obj.acquireMode, 'averager')
+                if strcmp(obj.acquireMode, 'digitizer')
+                    obj.sumDataA = [];
+                    obj.sumDataB = [];                   
+                elseif strcmp(obj.acquireMode, 'thresholder')
+                    obj.sumDataA = 0;
+                    obj.sumDataB = 0;
+                else
                     obj.sumDataA = zeros([obj.settings.averager.recordLength, obj.settings.averager.nbrSegments]);
                     obj.sumDataB = zeros([obj.settings.averager.recordLength, obj.settings.averager.nbrSegments]);
-                else
-                    obj.sumDataA = [];
-                    obj.sumDataB = [];
                 end
                 
                 %If we are only getting partial round robins per buffer
@@ -256,6 +261,12 @@ classdef AlazarATS9870 < deviceDrivers.lib.deviceDriverBase
                         case 'averager'
                             obj.data{1} = zeros([obj.settings.averager.recordLength, obj.settings.averager.nbrSegments], 'single');
                             obj.data{2} = zeros([obj.settings.averager.recordLength, obj.settings.averager.nbrSegments], 'single');
+
+                        case 'thresholder'
+%                             obj.data{1} = zeros([obj.settings.averager.recordLength, obj.settings.averager.nbrSegments], 'single');
+%                             obj.data{2} = zeros([obj.settings.averager.recordLength, obj.settings.averager.nbrSegments], 'single');
+                            obj.data{1} = 0;
+                            obj.data{2} = 0;
                     end
                 else
                     partialBufs = false;
@@ -267,6 +278,10 @@ classdef AlazarATS9870 < deviceDrivers.lib.deviceDriverBase
             if obj.bufferct >= totNumBuffers
                 if strcmp(obj.acquireMode, 'averager')
                     %Average the summed data
+                    obj.data{1} = obj.sumDataA/totNumBuffers;
+                    obj.data{2} = obj.sumDataB/totNumBuffers;
+                    
+                elseif strcmp(obj.acquireMode, 'thresholder')
                     obj.data{1} = obj.sumDataA/totNumBuffers;
                     obj.data{2} = obj.sumDataB/totNumBuffers;
                 end
@@ -321,6 +336,28 @@ classdef AlazarATS9870 < deviceDrivers.lib.deviceDriverBase
                         obj.data{2} = reshape(obj.data{2}, [obj.settings.averager.recordLength, obj.settings.averager.nbrWaveforms, obj.settings.averager.nbrSegments, obj.buffers.roundRobinsPerBuffer]);
                         notify(obj, 'DataReady');
                     end
+                    
+                elseif strcmp(obj.acquireMode, 'thresholder')
+                    % scale with averaging over repeats (waveforms and round robins)
+                    % convert data to 1 or 0 based on threshold value
+                    if partialBufs
+                        [obj.data{1}(obj.idx:obj.idx+bufStride-1), obj.data{2}(obj.idx:obj.idx+bufStride-1)] = obj.processBufferAvg(bufferOut.Value, [obj.settings.averager.recordLength,...
+                            obj.settings.averager.nbrWaveforms, round(obj.settings.averager.nbrSegments*obj.buffers.roundRobinsPerBuffer), 1], obj.verticalScale);
+                        obj.idx = obj.idx + bufStride;
+                        if ((obj.idx-1) == numel(obj.data{1}))
+                            obj.idx = 1;
+                            obj.sumDataA = obj.sumDataA + double(mean(obj.data{1}) > obj.threshold);
+                            obj.sumDataB = obj.sumDataB + double(mean(obj.data{2}) > obj.threshold);
+                            notify(obj, 'DataReady');
+                        end
+                    else
+                        [obj.data{1}, obj.data{2}] = obj.processBufferAvg(bufferOut.Value, [obj.settings.averager.recordLength,...
+                            obj.settings.averager.nbrWaveforms, obj.settings.averager.nbrSegments, obj.buffers.roundRobinsPerBuffer], obj.verticalScale);
+                        obj.sumDataA = obj.sumDataA + double(mean(obj.data{1}) > obj.threshold);
+                        obj.sumDataB = obj.sumDataB + double(mean(obj.data{2}) > obj.threshold);
+                        notify(obj, 'DataReady');
+                    end
+                    
                 else
                     % scale with averaging over repeats (waveforms and round robins)
                     if partialBufs
