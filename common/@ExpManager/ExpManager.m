@@ -359,6 +359,7 @@ classdef ExpManager < handle
             plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
             plotMap.real = struct('label','Real Quad.', 'func', @real);
             plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
+            plotMap.data = struct('label', 'Switching Probability', 'func', @real);
             
             for measName = fieldnames(obj.data)'
                 measData = squeeze(obj.data.(measName{1}).mean);
@@ -376,8 +377,8 @@ classdef ExpManager < handle
                     case 'quad'
                         toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
                         numRows = 2; numCols = 2;
-                    case 'normal'
-                        toPlot = {plotMap.real};
+                    case 'data'
+                        toPlot = {plotMap.data};
                         numRows = 1; numCols = 1;
                     otherwise
                         toPlot = {};
