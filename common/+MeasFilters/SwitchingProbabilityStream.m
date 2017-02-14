@@ -16,31 +16,32 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 classdef SwitchingProbabilityStream < MeasFilters.DigitalMeasFilter
-    
+
     properties
         channel
         threshold
     end
-    
+
     methods
         function obj = SwitchingProbabilityStream(label, settings)
             obj = obj@MeasFilters.DigitalMeasFilter(label, settings);
 %             obj.channel = str2double(settings.channel);
             obj.threshold = 0.02;
 %             obj.saved = false; %until we figure out a new data format then we don't save the raw streams
-            
+
 %             obj.saveRecords = settings.saveRecords;
 %             if obj.saveRecords
 %                 obj.fileHandle = fopen([settings.recordsFilePath, '.data'], 'wb');
 %             end
-            
+
+
         end
-        
+
         function apply(obj, src, ~)
 
             %Pull the raw stream from the digitizer
             obj.latestData = src.data{1};
-            
+
             accumulate(obj);
             notify(obj, 'DataReady');
         end

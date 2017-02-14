@@ -1,5 +1,5 @@
 function device = InstrumentFactory(name, instrSettings)
-    
+
     %If we weren't passed settings then load from library
     if ~exist('instrSettings', 'var')
         %load the instrument library
@@ -11,7 +11,7 @@ function device = InstrumentFactory(name, instrSettings)
 
         %Pull out the instrument settings dictionary
         instrSettings = instrLibrary.instrDict.(name);
-        deviceClass = instrSettings.x__class__;
+        deviceClass = instrSettings.deviceName;
     else
         deviceClass = instrSettings.deviceName;
     end
@@ -20,4 +20,5 @@ function device = InstrumentFactory(name, instrSettings)
     device = eval(deviceClass);
     device.connect(instrSettings.address);
     device.setAll(instrSettings);
+
 end

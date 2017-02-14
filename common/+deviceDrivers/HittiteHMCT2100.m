@@ -4,11 +4,11 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
     %
     % Author(s): Caleb Howington
     % Generated on: Mon Jan 4 2016
-    
+
     % Device properties correspond to instrument parameters
     properties (Access = public)
         output
-        frequency        
+        frequency
         power
         phase
         mod
@@ -16,12 +16,12 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
         pulse
         pulseSource
     end % end device properties
-    
+
     methods
         function obj = HittiteHMCT2100()
             %obj = obj@deviceDrivers.lib.uWSource();
         end
-        
+
 		% Instrument parameter accessors
         % getters
         function val = get.frequency(obj)
@@ -33,7 +33,7 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
         function val = get.output(obj)
             val = obj.query('output?');
         end
-        
+
         % property setters
         function obj = set.frequency(obj, value)
             assert(isnumeric(value), 'Requires numeric input');
@@ -47,7 +47,6 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
         end
         function obj = set.output(obj, value)
             obj.write(['output ' obj.cast_boolean(value)]);
-%             pause(5);
         end
         % set phase in degrees
 %         function obj = set.phase(obj, ~)
@@ -65,11 +64,11 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
 %         function obj = set.pulseSource(obj, ~)
 %             pass;
 %         end
-                
+
 %         function errs=check_errors(obj)
 %             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             % Check for errors
-%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+%             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %             first=1;
 %             errs=[];
 %             while 1
@@ -88,9 +87,9 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
 %             end
 %         end
     end % end instrument parameter accessors
-    
+
     methods (Static)
-       
+
         %Helper function to cast boolean inputs to 'on'/'off' strings
         function out = cast_boolean(in)
             if isnumeric(in)
@@ -103,7 +102,7 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
                     in = 'off';
                 end
             end
-            
+
             checkMapObj = containers.Map({'on','1','off','0'},...
                 {'on','on','off','off'});
             assert(checkMapObj.isKey(lower(in)), 'Invalid input');
@@ -117,4 +116,5 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
             end
         end
     end
+
 end % end class definition
