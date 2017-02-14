@@ -1,17 +1,15 @@
 % timeDomain
-function JPMExpScripter(expName)
+function JPMContrastExpScripter(expName, bright)
 
 exp = JPMExpManager();
 
 deviceName = 'Contrast';
 exp.dataFileHandler = JPMDataHandler(DataNamer.get_data_filename(deviceName, expName));
 
-expSettings = json.read(getpref('qlab', 'CurScripterFile'));
-
-% if contrast=='bright'
-%     expSettings = json.read('C:\Users\Caleb\Development\pyqlab\BrightExpSettings.json');
-% else
-%     expSettings = json.read('C:\Users\Caleb\Development\pyqlab\DarkExpSettings.json');
+if bright
+    expSettings = json.read('C:\Users\Caleb\Development\pyqlab\BrightExpSettings.json');
+else
+    expSettings = json.read('C:\Users\Caleb\Development\pyqlab\DarkExpSettings.json');
     
 exp.dataFileHeader = expSettings;
 exp.CWMode = expSettings.CWMode;

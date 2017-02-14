@@ -84,9 +84,8 @@ classdef DigitalMeasFilter < handle
                 tmpVar.data = squeeze(sum(sum(obj.latestData.^2, 4), 2));
                 obj.varct = obj.varct + size(obj.latestData,2)*size(obj.latestData,4);
             else
-                tmpData = double(mean(obj.latestData) > obj.threshold);
-%                 tmpData = mean(obj.latestData);
-                tmpVar.data = tmpData.^2;
+                tmpData = obj.latestData;
+                tmpVar.data = obj.latestData.^2;
                 obj.varct = obj.varct + 1;
             end
             
@@ -101,7 +100,7 @@ classdef DigitalMeasFilter < handle
         end
         
         function out = get_data(obj)
-            out = obj.accumulatedData ./ obj.avgct;
+            out = obj.accumulatedData / obj.avgct;
         end
         
         function out = get_var(obj)

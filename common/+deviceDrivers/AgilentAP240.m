@@ -22,10 +22,10 @@ classdef AgilentAP240 < hgsetget
         resourceName = 'PCI::INSTR0';
         model_number = 'AP120';
         name; 
-        Address;
-        channel_on; % sets or queries which channels are currently on
+        address;
+        channel_on = 0; % sets or queries which channels are currently on
         triggerSource; % which channel supplies the trigger
-        acquireMode;  %fieldnames of value and flags
+        acquireMode = 'averager';  %fieldnames of value and flags
         clockType; % internal, external, or external reference
         settings; % Cache everything!  Huzzah!
         buffers;
@@ -188,10 +188,10 @@ classdef AgilentAP240 < hgsetget
             obj.reset();
         end % end constructor
         
-        function connect(obj, Address)
+        function connect(obj, address)
             if nargin > 1
                 % if we specify an new address, use it.
-                obj.Address    = Address;
+                obj.address    = address;
             end
         end
         
@@ -206,7 +206,7 @@ classdef AgilentAP240 < hgsetget
             else
                 options = 'CAL=FALSE';
             end
-            [status instrumentID] = Aq_InitWithOptions(obj.resourceName, 0, 0, options);
+            [status, instrumentID] = Aq_InitWithOptions(obj.resourceName, 0, 0, options);
             obj.error_check(status);
             AcquirisBeenCalibrated = false;
             
@@ -241,10 +241,10 @@ classdef AgilentAP240 < hgsetget
             obj.settings = settings;
             fields = fieldnames(settings);
             for j = 1:length(fields);
-                name = fields{j};
-                switch name
-                    case 'acquire_mode'
-                        obj.acquire_mode = settings.acquire_mode;
+                field = fields{j};
+                switch field
+                    case 'acquireMode'
+                        obj.acquireMode = settings.acquireMode;
                     case 'horizontal'
                         obj.horizontal = settings.horizontal;
                     case 'vertical'
@@ -255,10 +255,10 @@ classdef AgilentAP240 < hgsetget
                     case 'averager'
                         obj.averager = settings.averager;
                     otherwise
-                        if ismember(name, methods(obj))
-                            feval(['obj.' name], settings.(name));
-                        elseif ismember(name, properties(obj))
-                            obj.(name) = settings.(name);
+                        if ismember(field, methods(obj))
+                            feval(['obj.' field], settings.(field));
+                        elseif ismember(field, properties(obj))
+                            obj.(field) = settings.(field);
                         end
                 end
             end
@@ -276,7 +276,8 @@ classdef AgilentAP240 < hgsetget
         function status = acquire(obj)
             % Start the acquisition
             status = AqD1_acquire(obj.instrID);
-            assert(status == 0, 'Error in AqD1_acquire: %d', status);
+%             assert(status == 0, 'Error in AqD1_acquire: %d', status);
+            obj.error_check(status);
         end
         
         %%wait for acquisition - will timeout in timeout seconds if it
@@ -285,7 +286,7 @@ classdef AgilentAP240 < hgsetget
             
             %Convert default to seconds
             if ~exist('timeout', 'var')
-                timeout = obj.timeout/1000;
+                timeout = obj.timeout./1000;
             end
             
             % maximum timeout value for AqD1_waitForEndOfAcquisition is 10
@@ -298,11 +299,13 @@ classdef AgilentAP240 < hgsetget
             %Wait for end of acquisition
             while now() < strt+timeout
                 status = AqD1_waitForEndOfAcquisition(obj.instrID, min(timeout,recheck_time)*1000);
+%                 if status == -1074116352
                 if status == 0
                     break; % we don't have to continue looping if we are already done
                 else
                     %Flush the event queue
-                    drawnow;
+%                     drawnow;
+                    pause(0.2);
                 end
             end
             obj.error_check(status);            
@@ -317,7 +320,7 @@ classdef AgilentAP240 < hgsetget
         end
         
         %%get data acquired
-        function [AqDataBuffer times] = transfer_waveform(obj, channel)
+        function [AqDataBuffer, times] = transfer_waveform(obj, channel)
             AqReadParameters.dataType = 3; % 64 bit real data
             % SC: readMode = 2 for averaged waveform -  5 is for short averager waveform
             AqReadParameters.readMode = 2; % averaged waveform read mode
@@ -341,7 +344,7 @@ classdef AgilentAP240 < hgsetget
             AqReadParameters.reserved3 = 0.0;
             
             % Read the channel waveform
-            [status dataDesc , ~, AqDataBuffer] = AqD1_readData(obj.instrID, channel, AqReadParameters);
+            [status, dataDesc, ~, AqDataBuffer] = AqD1_readData(obj.instrID, channel, AqReadParameters);
             
             % chop off initial unused points
             nbrSamples = obj.averager.recordLength * obj.averager.nbrSegments;
@@ -432,12 +435,14 @@ classdef AgilentAP240 < hgsetget
         
         function val = get.trigger(obj)
             %get trigger source
-            [status triggerCoupling triggerSlope triggerLevel triggerLevel2] = AqD1_getTrigSource(obj.instrID, obj.triggerSource);
+            sources = struct('Ext',-1,'Int',1);
+            [status triggerCoupling triggerSlope triggerLevel triggerLevel2] = AqD1_getTrigSource(obj.instrID, sources.(obj.triggerSource));
             assert(status == 0, 'Error in AqD1_getTrigSource: %d', status);
             val.triggerCoupling = triggerCoupling;
             val.triggerSlope = triggerSlope;
             val.triggerLevel = triggerLevel;
             val.triggerLevel2 = triggerLevel2;
+            obj.error_check(status);
         end
         
         function val = get.triggerClass(obj)
@@ -619,7 +624,7 @@ classdef AgilentAP240 < hgsetget
             avgVal=obj.def(avgVal,'ditherRange',15);
             avgVal=obj.def(avgVal,'trigResync',1);
             avgVal=obj.def(avgVal,'data_stop',0);
-            obj.buffers.roundRobinsPerBuffer=avgVal.nbrRoundRobins/avgVal.nbrSoftAverages;
+            obj.buffers.roundRobinsPerBuffer=avgVal.nbrRoundRobins;
             obj.buffers.numBuffers=1;
             if(isfield(avgVal, 'recordLength') && isfield(avgVal, 'nbrSegments') && (isfield(avgVal, 'num_avg') || isfield(avgVal, 'nbrWaveforms')) && isfield(avgVal, 'nbrRoundRobins') &&isfield(avgVal, 'ditherRange') && isfield(avgVal, 'trigResync'))
                 
@@ -646,7 +651,7 @@ classdef AgilentAP240 < hgsetget
                 status = obj.config_parameter('NbrWaveforms', nbrWaveforms);
                 assert(status == 0, 'Error in AqD1_configAvgConfigInt32: %d', status);
                 
-                obj.config_parameter('NbrRoundRobins', avgVal.nbrRoundRobins/avgVal.nbrSoftAverages);
+                obj.config_parameter('NbrRoundRobins', avgVal.nbrRoundRobins);
                 
                 status = obj.config_parameter('DitherRange', avgVal.ditherRange);
                 assert(status == 0, 'Error in AqD1_configAvgConfigInt32: %d', status);
