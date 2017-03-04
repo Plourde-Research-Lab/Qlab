@@ -53,23 +53,26 @@ classdef AWGSequence < sweeps.Sweep
                     case 'deviceDrivers.Tek5014'
                         ext = '.awg';
                         error('Have not written code for TekAWG yet.');
-                    case 'deviceDrivers.APS'
+                    case 'deviceDrivers.APS2'
                         ext = '.h5';
                 end
-                fileName = sprintf('%s-%s_%d%s',obj.sequenceFile, curAWGName, obj.points(index), ext);
+                ext = '.h5';
+                fileName = sprintf('%s%d-%s%s',obj.sequenceFile, obj.points(index), curAWGName, ext);
+                fileName = fullfile(getpref('qlab', 'awgDir'), fileName);
+                display(fileName)
                 assert(logical(exist(fileName, 'file')), 'AWGSequence ERROR: Could not find file %s\n', fileName)
-                
+                obj.AWGs.(curAWGName).load_sequence(fileName);
                 %Load the new file
-                wasRunning = false;
-                if obj.AWGs.(curAWGName).isRunning
-                    wasRunning = true;
-                    obj.AWGs.(curAWGName).stop()
-                end
-                obj.AWGs.(curAWGName).loadConfig(fileName);
-                if wasRunning
-                    obj.AWGs.(curAWGName).run()
-                    pause(0.1);
-                end
+%                 wasRunning = false;
+%                 if obj.AWGs.(curAWGName).isRunning
+%                     wasRunning = true;
+%                     obj.AWGs.(curAWGName).stop()
+%                 end
+%                 obj.AWGs.(curAWGName).loadConfig(fileName);
+%                 if wasRunning
+%                     obj.AWGs.(curAWGName).run()
+%                     pause(0.1);
+%                 end
             end
         end
     end
