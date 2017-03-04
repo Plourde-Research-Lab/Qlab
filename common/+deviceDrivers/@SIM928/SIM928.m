@@ -22,10 +22,10 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 % select which range, 2 = 10 mV, 3 = 100 mV, 4 = 1V, 5 = 10V,6 = 30V
-classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIB
+classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.GPIB
     properties (Access = public)
         output
-        channel = 3;
+        channel = 1;
         value
         frequency  	% defined in deviceDrivers.lib.uWSource
         power      	% defined in deviceDrivers.lib.uWSource
