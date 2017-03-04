@@ -1,4 +1,4 @@
-classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorEthernet
+classdef (Sealed) AgilentN5183A < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorVISA
     % Agilent N5183A microwave signal generator
     %
     %
