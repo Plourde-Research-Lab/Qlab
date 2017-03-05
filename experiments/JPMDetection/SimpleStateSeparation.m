@@ -1,4 +1,4 @@
-ExpName = 'State Separation  4.9GHz 10dBAtt Filtered';
+ExpName = 'State Separation 5.0 GHz RO 100avg 500mVTrigger 20dBAdded to Ref';
 
 ExpScripter([ExpName ' Dip'])
 dipdata = load_data('latest');
@@ -25,3 +25,9 @@ figure;
 scatter(real(dipdata.data), imag(dipdata.data));
 hold all;
 scatter(real(nodipdata.data), imag(nodipdata.data))
+
+title(ExpName)
+legend('$\left| L \right>$', '$\left| R \right>$');
+
+saveas(gcf, fullfile(nodipdata.path, [ExpName ' IQ']))
+saveas(gcf, fullfile(nodipdata.path, [ExpName ' IQ'], 'png'))
