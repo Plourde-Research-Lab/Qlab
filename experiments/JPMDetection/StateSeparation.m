@@ -2,89 +2,27 @@ function [ output_args ] = StateSeparation( dataname )
 %STATESEPARATION Summary of this function goes here
 %   Detailed explanation goes here
 
-%     Initialize Plot figures
-%     figure;
-%     histplt = subplot(2,1,1);
-%     xlabel(histplt, 'Amplitude');
-%     ylabel('Probability');
-%     title('Single Shot Histogram');
-%
-%     iqplt = subplot(2,1,2);
-%     title('Single Shot IQ Values');
-%     xlabel('Real (I)');
-%     ylabel('Imaginary (Q)');
-%
-%
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     Perform first state experiment
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     display('Setup the first (bright) Experiment and press any key to continue');
-%     pause;
-%
-%     ExpScripter(['BrightStateSeparation' dataname]);
-%
-%     Load State 1 Data
-%     brightdata = load_data('latest');
-%
-%     Plot in IQ Plane
-%     scatter(iqplt, real(brightdata.data), imag(brightdata.data), 'DisplayName', 'Bright');
-%     legend(iqplt);
-%
-%     Fit Histogram to gaussian
-%
-%     Plot Histogram and gaussian
-%     histogram(histplt, abs(brightdata.data), 101, 'Normalization', 'Probability', 'DisplayName', 'Bright');
-%     legend(histplt);
-%
-%
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     Perform second state experiment
-%     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%     display('Setup the second (dark) Experiment and press any key to continue');
-%     pause;
-%
-%     ExpScripter(['Dark State Separation' dataname]);
-%
-%     Load State 2 Data
-%     darkdata = load_data('latest');
-%
-%     Plot in IQ Plane
-%     hold(iqplt,'on');
-%     scatter(iqplt, real(darkdata.data), imag(darkdata.data), 'DisplayName', 'Dark');
-%     legend('show');
-%
-%     Fit Histogram to gaussian
-%     dpd = fitdist(abs(darkdata.data), 'Normal');
-%     x2_values = 0:0.01:15;
-%     drkpdfit = pdf(dpd, x2_values);
-%
-%     Plot Histogram and gaussian
-%     hold(histplt, 'on');
-%     histogram(histplt, abs(darkdata.data), 101, 'Normalization', 'Probability', 'DisplayName', 'Dark');
-%     legend('show');
-%
-%     hold off;
-%
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%% INITIALIZE SOME SETTINGS
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     numRepeats = 100;
-    awg = 'APS22');
-    awgChannel = 2;
+    numAvg = 1;
+    awg = 'APS22';
+    awgChannel = '2';
     scope = 'Scope';
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% BRIGHT MEASUREMENT
+    %%%% RIGHT WELL MEASUREMENT
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    display('Taking Right Well Data....');
+    
     exp = ExpManager();
 
     deviceName = getpref('qlab', 'deviceName');
-    exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, [dataname ' Bright']));
+    exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, [dataname ' Right']));
 
     expSettings = json.read(getpref('qlab', 'CurScripterFile'));
     exp.dataFileHeader = expSettings;
@@ -93,25 +31,24 @@ function [ output_args ] = StateSeparation( dataname )
     measSettings = expSettings.measurements;
 
     % Set Scope to acquire one average
-    instrSettings.(scope).averager.nbrRoundRobbins = 1;
+    instrSettings.(scope).averager.nbrRoundRobins = numAvg;
 
     for instrument = fieldnames(instrSettings)'
-        fprintf('Connecting to %s\n', instrument{1});
         instr = InstrumentFactory(instrument{1}, instrSettings.(instrument{1}));
         add_instrument(exp, instrument{1}, instr, instrSettings.(instrument{1}));
     end
 
-    add_sweep(exp, 1, SweepFactory(struct('type', 'Repeat', 'numRepeats', numRepeats), instruments))
+    add_sweep(exp, 1, SweepFactory(struct('type', 'Repeat', 'numRepeats', numRepeats), exp.instruments))
 
     measFilters = struct();
     measNames = fieldnames(measSettings);
     for meas = measNames'
         measName = meas{1};
         params = measSettings.(measName);
-            %Otherwise load it and keep a reference to it
-            measFilters.(measName) = MeasFilters.(params.filterType)(measName,params);
-            add_measurement(exp, measName, measFilters.(measName));
-        end
+        %Otherwise load it and keep a reference to it
+        measFilters.(measName) = MeasFilters.(params.filterType)(measName,params);
+        add_measurement(exp, measName, measFilters.(measName));
+
     end
 
     exp.init();
@@ -121,18 +58,72 @@ function [ output_args ] = StateSeparation( dataname )
     brightData = load_data('latest');
 
 
-
+    exp.delete();
+    clear exp;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%% DARK MEASUREMENT
+    %%%% LEFT MEASUREMENT
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    display('Taking Left Well Data....');
+    
     %% Make Changes to Experiment
 
-    exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, [dataname ' Dark']));
-    exp.instruments.(awg).set_channel_enabled(awgChannel, 0);
+    exp = ExpManager();
 
+    deviceName = getpref('qlab', 'deviceName');
+    exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, [dataname ' Left']));
+
+    exp.dataFileHeader = expSettings;
+    exp.CWMode = expSettings.CWMode;
+
+    % Set Scope to acquire one average
+    instrSettings.(scope).averager.nbrRoundRobins = numAvg;
+    instrSettings.(awg).(['chan_' awgChannel]).enabled = 0;
+    
+    for instrument = fieldnames(instrSettings)'
+        instr = InstrumentFactory(instrument{1}, instrSettings.(instrument{1}));
+        add_instrument(exp, instrument{1}, instr, instrSettings.(instrument{1}));
+    end
+
+    add_sweep(exp, 1, SweepFactory(struct('type', 'Repeat', 'numRepeats', numRepeats), exp.instruments))
+
+    measFilters = struct();
+    measNames = fieldnames(measSettings);
+    for meas = measNames'
+        measName = meas{1};
+        params = measSettings.(measName);
+        %Otherwise load it and keep a reference to it
+        measFilters.(measName) = MeasFilters.(params.filterType)(measName,params);
+        add_measurement(exp, measName, measFilters.(measName));
+
+    end
+    
     exp.init();
     exp.run();
 
     darkData = load_data('latest');
+    
+    figure;
+    scatter(real(brightData.data), imag(brightData.data));
+    hold all;
+    scatter(real(darkData.data), imag(darkData.data))
+
+
+    leg = legend('$$\left| L \right>$$', '$$\left| R \right>$$');
+    set(leg, 'interpreter', 'latex');
+    
+    axis equal;
+    
+    datanumber = strsplit(darkData.filename, '_');
+    datanumber = datanumber(1);
+    
+    plotname = strcat(datanumber, getpref('qlab', 'deviceName'), dataname, '-IQ');
+    plotname = strrep(plotname, ' ', '_');
+    
+    title(plotname, 'interpreter', 'none');
+    
+    display(plotname);
+    display(fullfile(darkData.path, plotname));
+    saveas(gcf, char(fullfile(darkData.path, plotname)), 'fig');
+    saveas(gcf, char(fullfile(darkData.path, plotname)), 'png');
 end

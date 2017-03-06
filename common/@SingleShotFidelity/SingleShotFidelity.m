@@ -148,7 +148,7 @@ classdef SingleShotFidelity < handle
             
             %Create the sequence of alternating QId, 180 inversion pulses
             if obj.settings.createSequence
-                obj.SingleShotSequence(obj.qubit)
+                obj.JPMSingleShotSequence(obj.qubit)
             end
             
             % intialize the ExpManager
