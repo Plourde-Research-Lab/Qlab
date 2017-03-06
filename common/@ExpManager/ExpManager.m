@@ -219,6 +219,8 @@ classdef ExpManager < handle
                         idx = idx + 1;
                     else % inner most loop... take data
                         obj.take_data();
+                        
+                        
                         % pull data out of measurements
                         stepData = structfun(@(m) m.get_data(), obj.measurements, 'UniformOutput', false);
                         stepVar = structfun(@(m) m.get_var(), obj.measurements, 'UniformOutput', false);

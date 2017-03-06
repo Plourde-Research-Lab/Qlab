@@ -1,5 +1,6 @@
 aps = APS();
-aps.connect('A6001ixV');
+%aps.connect('A5XKI3GQ');
+aps.connect(0)
 aps.init();
 aps.delete;
 clear aps;

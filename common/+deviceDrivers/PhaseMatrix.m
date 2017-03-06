@@ -19,6 +19,7 @@ classdef (Sealed) PhaseMatrix < deviceDrivers.lib.uWSource & deviceDrivers.lib.S
         
         function connect(obj, addr)
             connect@deviceDrivers.lib.Serial(obj, addr);
+            %connect@deviceDrivers.lib.GPIBorVISA(obj, addr);
             
             %Default to external reference and reference output off
             obj.write('ROSC:SOUR EXT');

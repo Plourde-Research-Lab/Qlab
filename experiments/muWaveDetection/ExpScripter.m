@@ -3,7 +3,7 @@ function ExpScripter(expName)
 
 exp = ExpManager();
 
-deviceName = 'CSFQW3B7';
+deviceName = 'CSFQW4B5';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));

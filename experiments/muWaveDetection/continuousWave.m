@@ -42,11 +42,11 @@ aps.set_channel_enabled(2, true);
 
 aps.run()
 
-<<<<<<< HEAD
+%<<<<<<< HEAD
 ag.frequency = 6;
-=======
+%=======
 ag.frequency = 6.4;
->>>>>>> d9d59ff326e4eca46a8fbb459801121500e91620
+%>>>>>>> d9d59ff326e4eca46a8fbb459801121500e91620
 ag.power = 18.0;
 ag.output = 1;
 ag.pulse = 0;

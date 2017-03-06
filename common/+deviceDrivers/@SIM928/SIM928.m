@@ -25,7 +25,8 @@
 classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIB
     properties (Access = public)
         output
-        channel = 3;
+        %channel = 3;
+        channel
         value
         frequency  	% defined in deviceDrivers.lib.uWSource
         power      	% defined in deviceDrivers.lib.uWSource

@@ -210,7 +210,7 @@ classdef AgilentAP240 < hgsetget
             persistent AcquirisBeenCalibrated
             AcquirisBeenCalibrated = false;
             if isempty(AcquirisBeenCalibrated) || ~AcquirisBeenCalibrated
-                options = 'CAL=TRUE';
+            options = 'CAL=TRUE';
             else
                 options = 'CAL=FALSE';
             end
@@ -221,7 +221,7 @@ classdef AgilentAP240 < hgsetget
             obj.instrID  = instrumentID;
             
             % Retrieve digitizer position
-            status = Aq_getInstrumentData(instrumentID);
+            status = Aq_getInstrumentData(obj.instrID);
             assert(status == 0, 'Error in Aq_getInstrumentData: %d', status);
             
         end % end reset

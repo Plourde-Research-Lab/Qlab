@@ -1,3 +1,4 @@
+%classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.lib.Serial
 classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.lib.GPIBorVISA
     % Hittite HMC-T2100 Microwave Generator
     %
