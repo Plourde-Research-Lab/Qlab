@@ -16,15 +16,19 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 classdef DC < sweeps.Sweep
+	properties
+			channel
+	end
 	methods
 		% constructor
 		function obj = DC(sweepParams, Instr)
 			obj.axisLabel = 'DC';
-			
+
             % look for an instrument with the name 'instr'
             obj.Instr = Instr.(sweepParams.instr);
-			
-			% generate power points
+						obj.channel = sweepParams.channel;
+
+			% generate DC points
 			start = sweepParams.start;
 			stop = sweepParams.stop;
 			step = sweepParams.step;
@@ -34,10 +38,10 @@ classdef DC < sweeps.Sweep
 			obj.points = start:step:stop;
             obj.numSteps = length(obj.points);
 		end
-		
+
 		% DC stepper
 		function step(obj, index)
-			obj.Instr.value = obj.points(index);
+			obj.Instr.setVoltage(obj.channel, obj.points(index));
 			pause(0.5); % pause 500 ms for settling
 		end
 	end

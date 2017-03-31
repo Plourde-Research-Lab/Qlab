@@ -19,16 +19,16 @@ classdef Attenuation < sweeps.Sweep
     properties
         channel
     end
-    
+
 	methods
 		% constructor
 		function obj = Attenuation(sweepParams, Instr)
 			obj.axisLabel = 'Attenuation';
-			
+
             % look for an instrument with the name 'Instr'
             obj.Instr = Instr.(sweepParams.instr);
             obj.channel = sweepParams.channel;
-			
+
 			% generate power points
 			start = sweepParams.start;
 			stop = sweepParams.stop;
@@ -38,12 +38,12 @@ classdef Attenuation < sweeps.Sweep
 			end
 			obj.points = start:step:stop;
             obj.numSteps = length(obj.points);
-			
+
 		end
-		
+
 		% power stepper
 		function step(obj, index)
-            obj.Instr.setAttenuation(obj.channel, obj.points(index));
+      obj.Instr.setAttenuation(obj.channel, obj.points(index));
 		end
 	end
 end
