@@ -80,6 +80,9 @@ classdef MeasFilter < handle
             % if there is only 1 roundRobinPerBuffer then Matlab has no
             % concept of a singleton trailing dimension and so returns a 3D
             % object
+            if isempty(obj.latestData)
+                return
+            end
             if (ndims(obj.latestData) == 4) || (ndims(obj.latestData) == 3)
                 tmpData = squeeze(mean(mean(obj.latestData, 4), 2));
                 tmpVar = struct();
@@ -113,7 +116,7 @@ classdef MeasFilter < handle
         
         function out = get_var(obj)
             out = struct();
-            if ~isempty(obj.accumulatedVar)
+            if ~isempty(obj.accumulatedVar) && ~isempty(get_data(obj))
                 out.realvar = obj.accumulatedVar.real/(obj.varct) - real(get_data(obj)).^2;
                 out.imagvar = obj.accumulatedVar.imag/(obj.varct) - imag(get_data(obj)).^2;
                 out.prodvar = obj.accumulatedVar.prod/(obj.varct) - real(get_data(obj)).*imag(get_data(obj));

@@ -28,6 +28,8 @@ classdef SingleShot < MeasFilters.MeasFilter
         saveKernel = true
         optIntegrationTime = true
         setThreshold = false
+        kernelNumber = NaN
+        zeroMean = false
     end
     
     methods
@@ -44,6 +46,12 @@ classdef SingleShot < MeasFilters.MeasFilter
             end
             if isfield(settings, 'setThreshold')
                 obj.setThreshold = settings.setThreshold;
+            end
+            if isfield(settings, 'kernelNumber')
+                obj.kernelNumber = settings.kernelNumber;
+            end
+             if isfield(settings, 'zeroMean')
+                obj.zeroMean = settings.zeroMean;
             end
         end
         
@@ -84,13 +92,19 @@ classdef SingleShot < MeasFilters.MeasFilter
                 %too small (also prevents kernel from diverging when var->0
                 %at the beginning of the record
                 kernel = kernel.*(abs(groundMean-excitedMean)>(1e-3*distance));
+                %subtract offset to cancel low-frequency fluctuations when
+                %integrating the raw data (not demod)
+                if obj.zeroMean
+                    kernel = kernel - mean(kernel);
+                end
                 fprintf('norm: %g\n', sum(abs(kernel)));
-                %normalize between -1 and 1.
-                kernel = kernel/max([real(kernel); imag(kernel)]);
-                
+                               
                 if isreal(kernel)
                     kernel = myhilbert(kernel);
                 end
+                
+                %normalize between -1 and 1.
+                kernel = kernel/max([abs(real(kernel)); abs(imag(kernel))]);
                 
                 %apply matched filter
                 weightedGround = bsxfun(@times, obj.groundData, kernel);
@@ -133,10 +147,10 @@ classdef SingleShot < MeasFilters.MeasFilter
                     gPDF = ksdensity(intGroundIData(intPt,:), bins);
                     ePDF = ksdensity(intExcitedIData(intPt,:), bins);
                 else
-                    groundIData = sum(real(weightedGround)) - real(bias);
-                    excitedIData = sum(real(weightedExited)) - real(bias);
-                    groundQData = sum(imag(weightedGround)) - imag(bias);
-                    excitedQData = sum(imag(weightedExited)) - imag(bias);
+                    groundIData = sum(real(weightedGround)); %- real(bias);
+                    excitedIData = sum(real(weightedExited)); %- real(bias);
+                    groundQData = sum(imag(weightedGround)); %- imag(bias);
+                    excitedQData = sum(imag(weightedExited)); %- imag(bias);
                     Imin = min(min(groundIData, excitedIData));
                     Imax = max(max(groundIData, excitedIData));
                     bins = linspace(Imin, Imax);
@@ -148,8 +162,13 @@ classdef SingleShot < MeasFilters.MeasFilter
                     if ~obj.optIntegrationTime
                         intPt = length(kernel);
                     end
-                    dlmwrite(strcat('kernel_',obj.dataSource,'_real.csv'), real(kernel)); 
-                    dlmwrite(strcat('kernel_',obj.dataSource,'_imag.csv'), imag(kernel));
+                    if ~isnan(obj.kernelNumber)
+                        kernelSuffix = [obj.dataSource '_' num2str(obj.kernelNumber)];
+                    else
+                        kernelSuffix = obj.dataSource;
+                    end
+                    dlmwrite(strcat('kernel_',kernelSuffix,'_real.csv'), real(kernel)); 
+                    dlmwrite(strcat('kernel_',kernelSuffix,'_imag.csv'), imag(kernel));
                 end
                 
                 obj.pdfData.maxFidelity_I = 1-0.5*(1-0.5*(bins(2)-bins(1))*sum(abs(gPDF-ePDF)));

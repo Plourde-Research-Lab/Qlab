@@ -112,10 +112,8 @@ classdef ExpManager < handle
             %Rearrange the AWG list to put the Master first
             obj.AWGs([1, masterAWGIndex]) = obj.AWGs([masterAWGIndex, 1]);
 
-            %Stop all the AWGs if not in CWMode
-            if(~obj.CWMode)
-                cellfun(@(awg) stop(awg), obj.AWGs);
-            else
+            % Start AWGs in CW Mode
+            if obj.CWMode
                 cellfun(@(awg) run(awg), obj.AWGs);
             end
 
@@ -314,7 +312,7 @@ classdef ExpManager < handle
             end
 
             %Wait for data taking to finish
-            obj.scopes{1}.wait_for_acquisition(obj.dataTimeout);
+            cellfun(@(scope) wait_for_acquisition(scope, obj.dataTimeout), obj.scopes);
 
             if(~obj.CWMode)
                 %Stop all the AWGs

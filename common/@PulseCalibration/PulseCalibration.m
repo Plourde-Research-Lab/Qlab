@@ -28,10 +28,13 @@ classdef PulseCalibration < handle
         AWGSettings
         testMode = false
         noiseVar % estimated variance of the noise from repeats
-        numShots % also participates in noise variance estimate
+        numShots = 1 % also participates in noise variance estimate
         finished = false
         initialParams
         singleScope = true
+        CRchanParams
+        targetAWG % name of target qubit AWG (for CR cal)
+        CRAWG % name of AWG with CR channel
     end
     methods
         % Class constructor
@@ -117,9 +120,9 @@ classdef PulseCalibration < handle
         end
 
         function stop = LMStoppingCondition(obj, ~, optimValues, ~)
-            %Assume that if the variance of the residuals is less than some 
+            %Assume that if the variance of the residuals is less than some
             %multiple of the variance of the noise then we are as good as it gets
-            %Anecdotally 2-3 seems to be reasonable 
+            %Anecdotally 2-3 seems to be reasonable
             if var(optimValues.residual) < 3*obj.noiseVar
                 stop = true;
             else
@@ -136,6 +139,13 @@ classdef PulseCalibration < handle
             channelLib = channelLib.channelDict;
             assert(isfield(channelLib, settings.Qubit), 'Qubit %s not found in channel library', settings.Qubit);
             obj.channelParams = channelLib.(settings.Qubit).pulseParams;
+            if isfield(settings, 'CRpulses')
+                for CRpulse = settings.CRpulses
+                    obj.CRchanParams.(CRpulse{1}) = channelLib.(CRpulse{1}).pulseParams;
+                end
+                qt = settings.CRpulses(1);
+                CRchan = settings.CRpulses(2);
+            end
             
             if isfield(obj.settings, 'SoftwareDevelopmentMode') && obj.settings.SoftwareDevelopmentMode
                 obj.testMode = true;
@@ -147,12 +157,9 @@ classdef PulseCalibration < handle
             % load ExpManager settings
             expSettings = json.read(obj.settings.cfgFile);
             instrSettings = expSettings.instruments;
-            instrNames = fieldnames(instrSettings);
-            ct = 0;
-            while (true)
-                ct = ct+1;
-                if strcmp(instrSettings.(instrNames{ct}).deviceName, 'AlazarATS9870') || strcmp(instrSettings.(instrNames{ct}).deviceName, 'X6')
-                    obj.numShots = instrSettings.(instrNames{ct}).averager.nbrRoundRobins * instrSettings.(instrNames{ct}).averager.nbrWaveforms;
+            for instrument = fieldnames(instrSettings)'
+                if strcmp(instrSettings.(instrument{1}).deviceName, 'AlazarATS9870') || strcmp(instrSettings.(instrument{1}).deviceName, 'X6')
+                    obj.numShots = instrSettings.(instrument{1}).averager.nbrRoundRobins * instrSettings.(instrument{1}).averager.nbrWaveforms;
                     break;
                 end
             end
@@ -165,12 +172,20 @@ classdef PulseCalibration < handle
             obj.channelParams.physChan = channelLib.(settings.Qubit).physChan;
             tmpStr = regexp(channelLib.(strcat(genvarname('M-'),settings.Qubit)).physChan, '-', 'split');  %do the same for readout. Then only enable control and readout AWGs
             obj.readoutAWG = tmpStr{1};
+            if isfield(settings, 'CRpulses')
+                tmpStr = regexp(channelLib.(qt{1}).physChan, '-', 'split');
+                obj.targetAWG = tmpStr{1};
+                tmpStr = regexp(channelLib.(CRchan{1}).physChan, '-', 'split');
+                obj.CRAWG = tmpStr{1};
+                tmpStr = regexp(channelLib.(strcat(genvarname('M-'),qt{1})).physChan, '-', 'split'); %readout is on the target
+                obj.readoutAWG = tmpStr{1};
+            end
             
             % add instruments
             for instrument = fieldnames(instrSettings)'
                 instr = InstrumentFactory(instrument{1});
-                if ExpManager.is_AWG(instr) && ~strcmp(instrument{1},obj.controlAWG) && ~strcmp(instrument{1},obj.readoutAWG) && ~instrSettings.(instrument{1}).isMaster
-                    %ignores the AWGs which are not either driving or reading this qubit
+                if ExpManager.is_AWG(instr) && ~strcmp(instrument{1},obj.controlAWG) && ~strcmp(instrument{1},obj.readoutAWG) && ~instrSettings.(instrument{1}).isMaster...
+                        && ~(isfield(settings, 'CRpulses') && (strcmp(instrument{1},obj.targetAWG) || strcmp(instrument{1},obj.CRAWG)))
                     continue
                 end
                 add_instrument(obj.experiment, instrument{1}, instr, instrSettings.(instrument{1}));
@@ -245,19 +260,9 @@ classdef PulseCalibration < handle
             obj.PulseCalibrationDo();
         end
         
-        function filenames = getAWGFileNames(obj, basename)
-            pathAWG = fullfile(getpref('qlab', 'awgDir'), basename);
-            awgNames = fieldnames(obj.AWGs)';
-            for awgct = 1:length(awgNames)
-                switch class(obj.AWGs.(awgNames{awgct}))
-                    case 'deviceDrivers.Tek5014'
-                        filenames{awgct} = fullfile(pathAWG, [basename '-' awgNames{awgct}, '.awg']);
-                    case {'deviceDrivers.APS', 'APS2','APS'}
-                        filenames{awgct} = fullfile(pathAWG, [basename '-' awgNames{awgct}, '.h5']);
-                    otherwise
-                        error('Unknown AWG type.');
-                end
-            end
+        function meta = getMetaInfo(obj, basename)
+            filename = fullfile(getpref('qlab', 'awgDir'), basename, [basename '-meta.json']);
+            meta = json.read(filename);
         end
 
         function cleanup(obj)

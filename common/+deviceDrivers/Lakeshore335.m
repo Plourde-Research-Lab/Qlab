@@ -30,7 +30,7 @@ classdef (Sealed) Lakeshore335 < deviceDrivers.lib.deviceDriverBase & deviceDriv
 			val = logical(str2double(query(instr, 'LEDS?')));
 		end
 
-		function set.leds(obj, val)
+		function set.leds(instr, val)
 			write(instr, sprintf('LEDS %d', val));
 		end
 
@@ -50,8 +50,21 @@ classdef (Sealed) Lakeshore335 < deviceDrivers.lib.deviceDriverBase & deviceDriv
 		function set_curve_val(instr, curve, index, val, temp)
 			%Set a calibration curve (val, temp) tuple for a curve at a specified index
 			write(instr, sprintf('CRVPT %d,%d,%d,%d', curve, index, val, temp));
-		end
+        end
+        
+        function set_heater_range(instr, chan, range)
+			% set heater range, channel: 1 or 2, range: 0 = off, 1 = low, 2
+			% = medium, and 3 = high
+			assert(chan == 1 || chan == 2, 'Channel must be 1 or 2');
+            assert(range == 0 || range == 3 || range == 1 || range == 2, 'range must be 0, 1, 2, or 3');
+			write(instr, sprintf('RANGE %d,%d', chan, range));
+        end
 
+        function set_setpoint(instr, chan, value)
+			% Control Setpoint Command, channel: 1 or 2
+			assert(chan == 1 || chan == 2, 'Channel must be 1 or 2');
+            write(instr, sprintf('SETP %d,%.3f', chan, value));
+		end
 	end
 
 end
