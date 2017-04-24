@@ -9,7 +9,7 @@ ExpParams.dataSource = 'Integrate';
 
 ExpParams.cfgFile = getpref('qlab', 'CurScripterFile');
 %Update some relevant parameters
-ExpParams.numShots = 50000;
+ExpParams.numShots = 10000;
 
 %Whether to auto-enable only the relevant AWGs
 ExpParams.autoSelectAWGs = true;

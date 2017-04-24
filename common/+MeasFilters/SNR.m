@@ -44,18 +44,18 @@ classdef SNR < MeasFilters.MeasFilter
             obj.Qpdf = fitdist(imag(obj.rawData), 'normal');
             obj.Apdf = fitdist(abs(obj.rawData), 'normal');
             
-%             obj.S = sqrt(obj.Ipdf.mu^2 + obj.Qpdf.mu^2);
+            obj.S = sqrt(obj.Ipdf.mu^2 + obj.Qpdf.mu^2);
 %             obj.N = sqrt(obj.Ipdf.sigma^2 + obj.Qpdf.sigma^2); 
-            obj.S = obj.Apdf.mean;
+%             obj.S = obj.Apdf.mean;
             obj.N = obj.Apdf.sigma;
             
             obj.SNRData = obj.S/obj.N;
             
             obj.analysed = true;
             
-            fprintf('Amplitude SNR: %.2f\n', obj.S/obj.N);
-            fprintf('I Sigma: %2.2f\n', obj.Ipdf.sigma);
-            fprintf('Q Sigma: %2.2f\n', obj.Qpdf.sigma);
+            fprintf('Amplitude SNR: %.5f\n', obj.S/obj.N);
+            fprintf('I Sigma: %2.5f\n', obj.Ipdf.sigma);
+            fprintf('Q Sigma: %2.5f\n', obj.Qpdf.sigma);
             out = obj.SNRData;
         end
         
@@ -101,7 +101,7 @@ classdef SNR < MeasFilters.MeasFilter
                 ax = subplot(1,1,1, 'Parent', figH);
                 scatter(ax, real(obj.rawData), imag(obj.rawData))
 %                 drawnow();
-                axis(ax, 'equal');
+%                 axis(ax, 'equal');
             end
         end
 
