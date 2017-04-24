@@ -11,7 +11,7 @@ function device = InstrumentFactory(name, instrSettings)
 
         %Pull out the instrument settings dictionary
         instrSettings = instrLibrary.instrDict.(name);
-        deviceClass = instrSettings.deviceName;
+        deviceClass = instrSettings.x__class__;
     else
         deviceClass = instrSettings.deviceName;
     end
