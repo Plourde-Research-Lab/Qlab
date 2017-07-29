@@ -106,6 +106,7 @@ plotMap.abs = struct('label','Amplitude', 'func', @abs);
 plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x));
 plotMap.real = struct('label','Real Quad.', 'func', @real);
 plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
+plotMap.prob = struct('label','Switching Probability', 'func', @real);
 
 switch plotMode
     case 'real'
@@ -129,6 +130,9 @@ switch plotMode
     case 'quad'
         toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
         numRows = 2; numCols = 2;
+    case 'prob'
+        toPlot = {plotMap.prob};
+        numRows = 1; numCols = 1;        
     otherwise
         toPlot = {};
 end

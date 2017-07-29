@@ -26,7 +26,7 @@ elseif strfind(lower(yl), 'freq');
     subz = z - (median(z,2) * ones(1, size(z,2)));
 end
 
-imagesc(x, y, subz);
+imagesc(x, y, abs(subz));
 xlabel(xl);ylabel(yl);title(tl);
 
 end

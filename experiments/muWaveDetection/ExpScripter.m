@@ -3,7 +3,8 @@ function most_recent_data = ExpScripter(expName)
 
 exp = ExpManager();
 
-deviceName = getpref('qlab', 'deviceName');
+%deviceName = getpref('qlab', 'deviceName');
+deviceName = 'W9D4';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));

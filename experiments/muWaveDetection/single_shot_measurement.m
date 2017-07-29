@@ -9,7 +9,7 @@ ExpParams.dataSource = strcat('Demod');
 %ExpParams.dataSource = 'Ch1X6';
 ExpParams.cfgFile = getpref('qlab', 'CurScripterFile');
 %Update some relevant parameters
-ExpParams.numShots = 50000;
+ExpParams.numShots = 1000;
 ExpParams.logisticRegression = false;
 ExpParams.saveKernel = true;
 ExpParams.optIntegrationTime = true;

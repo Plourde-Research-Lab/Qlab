@@ -58,21 +58,21 @@ p = [mean(y) abs(amps(biggestC)) Ts(biggestC) 2*pi*freqs(biggestC) 0];
 
 
 figure(h)
-subplot(3,1,2:3)
+% subplot(3,1,2:3)
 plot(xdata/1e3,y,'o')
 hold on
 plot(xdata_finer/1e3,rabif(beta,xdata_finer),'-r')
 xlabel('Time [\mus]')
 ylabel('<\sigma_z>')
 hold off
-subplot(3,1,1)
-bar(xdata/1e3,r)
-axis tight
-xlabel('Time [\mus]')
-ylabel('Residuals [V]')
-title(plotTitle)
+% subplot(3,1,1)
+% bar(xdata/1e3,r)
+% axis tight
+% xlabel('Time [\mus]')
+% ylabel('Residuals [V]')
+% title(plotTitle)
 
-subplot(3,1,2:3)
+% subplot(3,1,2:3)
 ylim([-1.05 1.05])
 
 t2 = beta(3);

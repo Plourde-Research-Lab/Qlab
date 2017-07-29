@@ -32,7 +32,7 @@ classdef MeasFilter < handle
         scopeavgct = 0
         plotScope = false
         scopeHandle
-        plotMode = 'amp/phase' %allowed enums are 'amp/phase', 'real/imag', 'quad'
+        plotMode = 'quad' %allowed enums are 'amp/phase', 'real/imag', 'quad'
         axesHandles
         plotHandles
         saved = true

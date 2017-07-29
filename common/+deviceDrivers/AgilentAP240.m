@@ -20,7 +20,7 @@ classdef AgilentAP240 < hgsetget
     properties (Access = public)
         instrID; %
         resourceName = 'PCI::INSTR0';
-        model_number = 'AP120';
+        model_number = 'AP240';
         name; 
         address;
         channel_on = 0; % sets or queries which channels are currently on
@@ -30,6 +30,8 @@ classdef AgilentAP240 < hgsetget
         settings; % Cache everything!  Huzzah!
         buffers;
         data; % Dummy to make us look like an alazar
+        dataOffset = 6; % Offset to remove first values of stream (first 5 seem to always be -max for this card)
+        
         
         memory;  %fields of recordLength and nbrSegments
         %recordLength - Nominal number of samples to record
@@ -46,21 +48,21 @@ classdef AgilentAP240 < hgsetget
         %beginning of the record. A positive number
         %corresponds to a trigger before the beginning of the
         %record (post-trigger recording). A negative number
-        %corresponds to pre-trigger recording. It canâ€™t be less
+        %corresponds to pre-trigger recording. It canâ??t be less
         %than -(sampInterval * recordLength), which
         %corresponds to 100% pre-trigger.
         
         vertical;   %Configures the vertical control parameters
         %for a specified channel of the digitizer.
         %fields of vert_channel, verticalScale, offset, verticalCoupling, bandwidth
-        %vert_channel - 1...Nchan, or â€“1,â€¦ for the External Input
+        %vert_channel - 1...Nchan, or â??1,â?¦ for the External Input
         %verticalScale - in Volts, but see triggerSource below
         %offset - in Volts
         %verticalCoupling - = 0 Ground (Averagers ONLY)
-        %				 = 1 DC, 1 Mâ„¦
-        %				 = 2 AC, 1 Mâ„¦
-        %				 = 3 DC, 50 â„¦
-        %				 = 4 AC, 50 â„¦
+        %				 = 1 DC, 1 Mâ?¦
+        %				 = 2 AC, 1 Mâ?¦
+        %				 = 3 DC, 50 â?¦
+        %				 = 4 AC, 50 â?¦
         
         
         trigger;   %Configures the trigger source control parameters
@@ -122,8 +124,8 @@ classdef AgilentAP240 < hgsetget
         %segment cycle during data accumulation.
         
         %ditherRange -
-        %Range of offset dithering, in ADC LSBâ€™s. May assume
-        %values v = 0, 1â€¦15 for AP units and 31 for U1084A
+        %Range of offset dithering, in ADC LSBâ??s. May assume
+        %values v = 0, 1â?¦15 for AP units and 31 for U1084A
         %units. The offset is dithered over the range
         % [ -v, + v] in steps of ~1/8 LSB. For Averagers ONLY.
         
@@ -166,7 +168,13 @@ classdef AgilentAP240 < hgsetget
     end % end device properties
     
     
-    
+    properties (Access = private)
+        initializeProcessing
+        done
+        idx
+        sumDataA
+        sumDataB
+    end
     % Class-specific private methods
     methods (Access = private)
         
@@ -202,19 +210,20 @@ classdef AgilentAP240 < hgsetget
             persistent AcquirisBeenCalibrated
             AcquirisBeenCalibrated = false;
             if isempty(AcquirisBeenCalibrated) || ~AcquirisBeenCalibrated
-                options = 'CAL=TRUE';
+            options = 'CAL=TRUE';
             else
                 options = 'CAL=FALSE';
             end
-            [status, instrumentID] = Aq_InitWithOptions(obj.resourceName, 0, 0, options);
-            obj.error_check(status);
-            AcquirisBeenCalibrated = false;
+%             [status, instrumentID] = Aq_InitWithOptions(obj.resourceName, 0, 0, options);
+            [status, instrumentID] = Aq_init(obj.resourceName, 0, 0);
+%             obj.error_check(status);
+            AcquirisBeenCalibrated = true;
             
             obj.instrID  = instrumentID;
             
-            % Retrieve digitizer position
-            status = Aq_getInstrumentData(instrumentID);
-            assert(status == 0, 'Error in Aq_getInstrumentData: %d', status);
+%             Retrieve digitizer position
+%             status = Aq_getInstrumentData(obj.instrID);
+%             assert(status == 0, 'Error in Aq_getInstrumentData: %d', status);
             
         end % end reset
         
@@ -263,6 +272,9 @@ classdef AgilentAP240 < hgsetget
                 end
             end
             % pause to let the card settle
+            
+            obj.clockType = 'ref';
+            
             pause(0.1);
         end
         
@@ -278,6 +290,9 @@ classdef AgilentAP240 < hgsetget
             status = AqD1_acquire(obj.instrID);
 %             assert(status == 0, 'Error in AqD1_acquire: %d', status);
             obj.error_check(status);
+            
+            obj.initializeProcessing = true;
+            obj.done = false;
         end
         
         %%wait for acquisition - will timeout in timeout seconds if it
@@ -297,18 +312,23 @@ classdef AgilentAP240 < hgsetget
             recheck_time=0.01;
             strt=now();
             %Wait for end of acquisition
-            while now() < strt+timeout
+            while ~obj.done
                 status = AqD1_waitForEndOfAcquisition(obj.instrID, min(timeout,recheck_time)*1000);
+%                 status = AqD1_waitForEndOfAcquisition(obj.instrID, 1000);
 %                 if status == -1074116352
                 if status == 0
-                    break; % we don't have to continue looping if we are already done
+                    obj.done = true; % we don't have to continue looping if we are already done
                 else
                     %Flush the event queue
 %                     drawnow;
                     pause(0.2);
                 end
             end
-            obj.error_check(status);            
+            obj.error_check(status);
+%             obj.download_buffer(obj.timeout);
+%             obj.data{1} = complex(single(obj.transfer_waveform(1)), single(obj.transfer_waveform(2)));
+            obj.data{1} = obj.transfer_waveform(1);
+            notify(obj, 'DataReady');
         end
         
         %%do a single acquisition of an averaged waveform
@@ -319,23 +339,23 @@ classdef AgilentAP240 < hgsetget
             status = wait_for_acquisition(obj);
         end
         
-        %%get data acquired
-        function [AqDataBuffer, times] = transfer_waveform(obj, channel)
+        %get data acquired
+        function AqDataBuffer = transfer_waveform(obj, channel)
             AqReadParameters.dataType = 3; % 64 bit real data
-            % SC: readMode = 2 for averaged waveform -  5 is for short averager waveform
+%             SC: readMode = 2 for averaged waveform -  5 is for short averager waveform
             AqReadParameters.readMode = 2; % averaged waveform read mode
             AqReadParameters.firstSegment = 0;
             AqReadParameters.nbrSegments = obj.averager.nbrSegments;
             AqReadParameters.firstSampleInSeg = 0;
             AqReadParameters.nbrSamplesInSeg = obj.averager.recordLength;
             AqReadParameters.segmentOffset = obj.averager.recordLength;
-            % SC: dataArraySize should be at least recordLength * nbrSegments *
-            % size_of_dataType - see the discusiion of AcqrsD1_readData function in the
-            % Programmer Reference
+%             SC: dataArraySize should be at least recordLength * nbrSegments *
+%             size_of_dataType - see the discusiion of AcqrsD1_readData function in the
+%             Programmer Reference
             
             AqReadParameters.dataArraySize = (obj.averager.recordLength + 32) * obj.averager.nbrSegments * 8;
             
-            % SC: Segment Descriptor for Averaged Waveforms (readMode = 2,5,6) in AqSegmentDescriptorAvg
+%             SC: Segment Descriptor for Averaged Waveforms (readMode = 2,5,6) in AqSegmentDescriptorAvg
             AqReadParameters.segDescArraySize = 40 * obj.averager.nbrSegments;
             
             AqReadParameters.flags = 0;
@@ -343,25 +363,37 @@ classdef AgilentAP240 < hgsetget
             AqReadParameters.reserved2 = 0.0;
             AqReadParameters.reserved3 = 0.0;
             
-            % Read the channel waveform
+%             Read the channel waveform
             [status, dataDesc, ~, AqDataBuffer] = AqD1_readData(obj.instrID, channel, AqReadParameters);
             
-            % chop off initial unused points
-            nbrSamples = obj.averager.recordLength * obj.averager.nbrSegments;
-            % fix off-by-five(?) error in indexFirstPoint
-            firstPt = 6;
-            %firstPt = dataDesc.indexFirstPoint;
+%             chop off initial unused points
+            nbrSamples = (obj.averager.recordLength) * obj.averager.nbrSegments;
+%             fix off-by-five(?) error in indexFirstPoint
+            firstPt = obj.dataOffset;
+%             firstPt = dataDesc.indexFirstPoint;
             AqDataBuffer = single(reshape(AqDataBuffer(1:nbrSamples), obj.averager.recordLength, obj.averager.nbrSegments));
-            % lop off first 5 points from each segment
+%             lop off first 5 points from each segment
             AqDataBuffer = AqDataBuffer(firstPt:end, :);
             
             times = linspace(firstPt*double(dataDesc.sampTime),double(obj.averager.recordLength - 1) * double(dataDesc.sampTime),obj.averager.recordLength-firstPt+1);
             obj.error_check(status);            
         end
+         
         function download_buffer(obj, timeout,~) % For compatibility with alazar card
            wait_for_acquisition(obj,timeout);                    
            obj.data{1} = single(obj.transfer_waveform(1));
-           obj.data{2} = single(obj.transfer_waveform(2));
+%            obj.data{2} = single(obj.transfer_waveform(2));
+        end
+
+        function plot_scope(obj)
+            obj.acquireSingleTrace()
+            
+            figure
+            subplot(2,1,1);
+            plot(real(obj.data{1}))
+
+            subplot(2,1,2);
+            plot(imag(obj.data{1}))
         end
     end % end methods
     methods % Instrument parameter accessors
@@ -382,7 +414,7 @@ classdef AgilentAP240 < hgsetget
         function val = get.acquireMode(obj)
             modeMap = containers.Map({0,2},{'digitizer', 'averager'});
 
-            [status mode , ~, flags] = AqD1_getMode(obj.instrID);
+            [status, mode , ~, flags] = AqD1_getMode(obj.instrID);
             if (status ~= 0)
                 fprintf('Error in AqD1_getMode: %d', status);
                 val.value = -10;
@@ -401,7 +433,7 @@ classdef AgilentAP240 < hgsetget
         end
         
         function val = get.memory(obj)
-            [status recordLength nbrSegments] = AqD1_getMemory(obj.instrID);
+            [status, recordLength, nbrSegments] = AqD1_getMemory(obj.instrID);
             if (status ~= 0)
                 fprintf('Error in AqD1_getMemory: %d', status);
                 val.recordLength = -10;
@@ -414,7 +446,7 @@ classdef AgilentAP240 < hgsetget
         end
         
         function val = get.horizontal(obj)
-            [status sampleInterval delayTime] = AqD1_getHorizontal(obj.instrID);
+            [status, sampleInterval, delayTime] = AqD1_getHorizontal(obj.instrID);
             assert(status == 0, 'Error in AqD1_getHorizontal: %d', status);
             val.sampleInterval = sampleInterval;
             val.samplingRate = 1/sampleInterval;
@@ -424,7 +456,7 @@ classdef AgilentAP240 < hgsetget
         function val = get.vertical(obj)
             %worry about channel specification
             channel = 1;
-            [status verticalScale offset verticalCoupling bandwidth]= AqD1_getVertical(obj.instrID, channel);
+            [status, verticalScale, offset, verticalCoupling, bandwidth]= AqD1_getVertical(obj.instrID, channel);
             assert(status == 0, 'Error in AqD1_getVertical: %d', status);
             %have to be carefull about keeping channel_on == vertical.vert_channel
             val.verticalScale = verticalScale;
@@ -435,8 +467,8 @@ classdef AgilentAP240 < hgsetget
         
         function val = get.trigger(obj)
             %get trigger source
-            sources = struct('Ext',-1,'Int',1);
-            [status triggerCoupling triggerSlope triggerLevel triggerLevel2] = AqD1_getTrigSource(obj.instrID, sources.(obj.triggerSource));
+            sources = struct('Ext',-1,'Ch1',1,'Ch2',2);
+            [status, triggerCoupling, triggerSlope, triggerLevel, triggerLevel2] = AqD1_getTrigSource(obj.instrID, sources.(obj.triggerSource));
             assert(status == 0, 'Error in AqD1_getTrigSource: %d', status);
             val.triggerCoupling = triggerCoupling;
             val.triggerSlope = triggerSlope;
@@ -446,7 +478,7 @@ classdef AgilentAP240 < hgsetget
         end
         
         function val = get.triggerClass(obj)
-            [status trigClass sourcePattern] = AqD1_getTrigClass(obj.instrID);
+            [status, trigClass, sourcePattern] = AqD1_getTrigClass(obj.instrID);
             assert(status == 0, 'Error in AqD1_getTrigSource: %d', status);
             val.trigClass = trigClass;
             val.sourcePattern = dec2hex(-sourcePattern);
@@ -454,7 +486,7 @@ classdef AgilentAP240 < hgsetget
         
         function val = get.averager(obj)
             %Metafunction which gets all of the averaging parameters
-            [status retVal] = AqD1_getAvgConfigInt32(obj.instrID, obj.channel_on, 'NbrSamples');
+            [status, retVal] = AqD1_getAvgConfigInt32(obj.instrID, obj.channel_on, 'NbrSamples');
             if (status ~= 0)
                 fprintf('Error in AqD1_getAvgConfigInt32: %d', status);
                 val.recordLength = -10;
@@ -463,7 +495,7 @@ classdef AgilentAP240 < hgsetget
             end
             
             % SC: configure the number of segments
-            [status retVal] = AqD1_getAvgConfigInt32(obj.instrID, obj.channel_on, 'NbrSegments');
+            [status, retVal] = AqD1_getAvgConfigInt32(obj.instrID, obj.channel_on, 'NbrSegments');
             if (status ~= 0)
                 fprintf('Error in AqD1_getAvgConfigInt32: %d', status);
                 val.nbrSegments = -10;
@@ -529,11 +561,12 @@ classdef AgilentAP240 < hgsetget
         % set clock type
         % valid modes are: 'int', 'ext', and 'ref'
         function obj = set.clockType(obj, mode)
-            mode = obj.clockTypes(mode); % convert mode to integer
+%             mode = obj.clockTypes('int'); % convert mode to integer
+            mode = 2;
             threshold = 500; % in mV for mode = 'ext'
             delay = 0; % delay in number of points for mode = 'ext'
-            inputFrequency = 500e6; % input frequency of external clock for mode = 'ext'
-            sampFrequency = 500e6; % sampling frequency for mode = 'ext'
+            inputFrequency = 10e6; % input frequency of external clock for mode = 'ext'
+            sampFrequency = 1000e6; % sampling frequency for mode = 'ext'
             status = AqD1_configExtClock(obj.instrID, mode, threshold, delay, inputFrequency, sampFrequency);
             assert(status==0, 'Error in AqD1_configExtClock: %d', status);
         end
@@ -581,7 +614,8 @@ classdef AgilentAP240 < hgsetget
                 
         function obj = set.trigger(obj, trigSrcVal)
             couplings = struct('DC',0,'AC',1,'HFreject',2);      
-            sources = struct('Ext',-1,'Int',1);
+            sources = struct('Ext',-1, 'Ch1', 1, 'Ch2', 2);
+%             sources = containers.Map({'Ext','1','2'},{-1, 1, 2});
             slopes=struct('rising',0);
             if (isfield(trigSrcVal, 'triggerCoupling')&& isfield(trigSrcVal, 'triggerSlope') && isfield(trigSrcVal, 'triggerLevel'))
                 if (~isfield(trigSrcVal, 'triggerLevel2'))
@@ -590,7 +624,7 @@ classdef AgilentAP240 < hgsetget
                 %Configure trigger source
                 if isfield(trigSrcVal, 'triggerSource')
                     obj.triggerSource = trigSrcVal.triggerSource;
-                end                
+                end
                 status = AqD1_configTrigSource(obj.instrID, sources.(obj.triggerSource), couplings.(trigSrcVal.triggerCoupling), slopes.(trigSrcVal.triggerSlope), trigSrcVal.triggerLevel, trigSrcVal.triggerLevel2);
                 obj.error_check(status);
             else
@@ -603,12 +637,11 @@ classdef AgilentAP240 < hgsetget
                 %status = AqD1_configTrigClass(obj.instrID, 0,  hex2dec('80000000'), 0, 0, 0, 0);
                 %last 4 args unused - set to 0
                 switch obj.triggerSource
-                    case -1
                     case 'Ext'
                         sourcePattern = hex2dec('80000000');
-                    case 1
+                    case 'Ch1'
                         sourcePattern = 1;
-                    case 2
+                    case 'Ch2'
                         sourcePattern = 2;
                     otherwise
                         error('unexpected value for triggerSource')
@@ -688,14 +721,14 @@ classdef AgilentAP240 < hgsetget
         function error_check(status)
             switch status
                 case 0
-                    ;
+                    return;
                 case -1074116402
                     fprintf('AgilentAP240: Acqiris calibration failed.  Continuing\n');
                 case 1073368576
                     warning('AgilentAP240: Acqiris is adaptable. Be warned');
                 otherwise
                     [st,msg]=Aq_errorMessage(0,status);
-                    error(sprintf('Error in AgilentAP240 (%d): %s\n',status,msg));
+                    error('Error in AgilentAP240 (%d): %s\n',status,msg);
             end
         end
         

@@ -1,71 +1,61 @@
-% Module Name :  SingleShotFidelity.m
+% Module Name :  StateCalibration.m
 %
-% Author/Date : Colm Ryan  / 9 April, 2012
+% Author/Date : Caleb Howington / June 6, 2017
 %
-% Description : Analyses single shot readout fidelity
+% Description : Analyses state separation of a two state experiment
 
-%
-% Copyright 2012 Raytheon BBN Technologies
-%
-% Licensed under the Apache License, Version 2.0 (the "License");
-% you may not use this file except in compliance with the License.
-% You may obtain a copy of the License at
-%
-%     http://www.apache.org/licenses/LICENSE-2.0
-%
-% Unless required by applicable law or agreed to in writing, software
-% distributed under the License is distributed on an "AS IS" BASIS,
-% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-% See the License for the specific language governing permissions and
-% limitations under the License.
+classdef StateCalibration < handle
 
-classdef SNRFidelity < handle
-    
     properties
         experiment % an instance of the ExpManager class
         settings % a structure of instrument/measurement/sweep settings
-        qubit
+        jpm %which jpm we are on
         controlAWG
         readoutAWG
         autoSelectAWGs
+        threshold
         singleScope = true
     end
-    
+
     methods
         %Class constructor
-        function obj = SNRFidelity()
+        function obj = StateCalibration()
         end
-        
+
         function Init(obj, settings)
-            obj.settings = settings;   
-            obj.qubit = obj.settings.qubit;
-            
+            obj.settings = settings;
+            obj.jpm = obj.settings.jpm;
+
             % create an ExpManager object
             obj.experiment = ExpManager();
-            
+
             obj.experiment.dataFileHandler = HDF5DataHandler(settings.fileName);
-            
+
             % load ExpManager settings
             expSettings = json.read(obj.settings.cfgFile);
             instrSettings = expSettings.instruments;
-            
+
             % construct data file header
             headerStruct = expSettings;
             headerStruct.singleshot = settings;
             obj.experiment.dataFileHeader = headerStruct;
-                     
+
             warning('off', 'json:fieldNameConflict');
             channelLib = json.read(getpref('qlab','ChannelParamsFile'));
             warning('on', 'json:fieldNameConflict');
             channelLib = channelLib.channelDict;
-            
-            tmpStr = regexp(channelLib.(obj.qubit).physChan, '-', 'split');
+
+            tmpStr = regexp(channelLib.(obj.jpm).physChan, '-', 'split');
             obj.controlAWG = tmpStr{1};
-            tmpStr = regexp(channelLib.(strcat(genvarname('M-'),obj.qubit)).physChan, '-', 'split'); 
+            tmpStr = regexp(channelLib.(strcat(genvarname('M-'),obj.jpm)).physChan, '-', 'split');
             obj.readoutAWG = tmpStr{1};
-            
+
             obj.autoSelectAWGs = settings.autoSelectAWGs;
-            
+
+            if ~isfield(settings,'kernelNumber')
+                obj.settings.kernelNumber = NaN;
+            end
+
             % add instruments
             for instrument = fieldnames(instrSettings)'
                 fprintf('Connecting to %s\n', instrument{1});
@@ -74,8 +64,8 @@ classdef SNRFidelity < handle
                 if ExpManager.is_AWG(instr)
                     if obj.autoSelectAWGs
                         if ~strcmp(instrument,obj.controlAWG) && ~strcmp(instrument,obj.readoutAWG) && ~instrSettings.(instrument{1}).isMaster
-                        %ignores the AWGs which are not either driving or reading this qubit
-                        continue
+                            %ignores the AWGs which are not either driving or reading this jpm
+                            continue
                         end
                     end
                     if isa(instr, 'deviceDrivers.APS') || isa(instr, 'APS2') || isa(instr, 'APS')
@@ -84,27 +74,24 @@ classdef SNRFidelity < handle
                         ext = 'awg';
                     end
                     fprintf('Enabling %s\n', instrument{1});
-                %To get a different sequence loaded into the APS1 when used as a slave for the msm't only.
+                    %To get a different sequence loaded into the APS1 when used as a slave for the msm't only.
                     %if isa(instr,'deviceDrivers.APS') && instrSettings.(instrument{1}).isMaster == 0
                     %    instrSettings.(instrument{1}).seqFile = fullfile(getpref('qlab', 'awgDir'), 'Reset', ['MeasReset-' instrument{1} '.' ext]);
                     %else
-                        instrSettings.(instrument{1}).seqFile = fullfile(getpref('qlab', 'awgDir'), obj.settings.sequenceName, [obj.settings.sequenceName '-' instrument{1} '.' ext]);
+                    instrSettings.(instrument{1}).seqFile = fullfile(getpref('qlab', 'awgDir'), 'StateCalibration', ['StateCalibration-' instrument{1} '.' ext]);
                     %end
-                end
-                if ExpManager.is_scope(instr)
+                elseif ExpManager.is_scope(instr)
                     scopeName = instrument{1};
-                end
-                add_instrument(obj.experiment, instrument{1}, instr, instrSettings.(instrument{1}));
-                if ExpManager.is_scope(instr)
                     % set scope to digitizer mode
-                    obj.experiment.instrSettings.(scopeName).acquireMode = 'averager';
+                    instrSettings.(scopeName).acquireMode = 'digitizer';
                     % set digitizer with the appropriate number of segments and
                     % round robins
-                    obj.experiment.instrSettings.(scopeName).averager.nbrSegments = settings.numShots;
-                    obj.experiment.instrSettings.(scopeName).averager.nbrRoundRobins = settings.numAvg;
+                    instrSettings.(scopeName).averager.nbrSegments = settings.numShots;
+                    instrSettings.(scopeName).averager.nbrRoundRobins = 1;
                 end
-            end          
-            
+                add_instrument(obj.experiment, instrument{1}, instr, instrSettings.(instrument{1}));
+            end
+
             %Add the instrument sweeps
             sweepSettings = settings.sweeps;
             sweepNames = fieldnames(sweepSettings);
@@ -113,15 +100,16 @@ classdef SNRFidelity < handle
             end
             if isempty(sweepct)
                 % create a generic SegmentNum sweep
-                %Even though there really is two segments there only one data
+                %Even though there really are two segments there is only one data
                 %point (SS fidelity) being returned at each step.
                 add_sweep(obj.experiment, 1, sweeps.SegmentNum(struct('axisLabel', 'Segment', 'start', 0, 'step', 1, 'numPoints', 1)));
             end
 
             % add single-shot measurement filter
             measSettings = expSettings.measurements;
-            add_measurement(obj.experiment, 'SNR',...
-                MeasFilters.SNR('SNR', struct('dataSource', obj.settings.dataSource, 'plotMode', 'amp/phase', 'plotScope', true)));
+            add_measurement(obj.experiment, 'StateCalibration',...
+                MeasFilters.StateCalibration('StateCalibration', struct('dataSource', obj.settings.dataSource, 'plotMode', 'real/imag', 'plotScope', true,...
+                'setStateParams', obj.settings.setStateParams)));
             curSource = obj.settings.dataSource;
             while (true)
                sourceParams = measSettings.(curSource);
@@ -132,39 +120,65 @@ classdef SNRFidelity < handle
                end
                curSource = sourceParams.dataSource;
             end
-            
-            if obj.settings.saveInt
-                sourceParams = measSettings.(obj.settings.intDataSource);
-                add_measurement(obj.experiment, obj.settings.intDataSource, MeasFilters.(sourceParams.filterType)(obj.settings.intDataSource, sourceParams));
-            end
-            
+
             %Disable unused scopes
             if obj.singleScope
                 for instrName = fieldnames(obj.experiment.instruments)'
                     instr = obj.experiment.instruments.(instrName{1});
-                    if((isa(instr,'X6') || isa(instr,'deviceDrivers.AlazarATS9870')) && ~strcmp(curFilter.dataSource, instrName{1}))
+                    if (ExpManager.is_scope(instr) && ~strcmp(curFilter.dataSource, instrName{1}))
                         obj.experiment.remove_instrument(instrName{1})
                     end
                 end
             end
-            
-            %Create the sequence of alternating QId, 180 inversion pulses
+
+            %Create the sequence of alternating LW, RW preparation pulses
             if obj.settings.createSequence
-                obj.SNRSequence(obj.qubit)
+                obj.StateCalibrationSequence(obj.jpm)
             end
-            
+
             % intialize the ExpManager
             init(obj.experiment);
         end
-        
-        function SNRData = Do(obj)
+
+        function SCData = Do(obj)
             obj.experiment.run();
-%             drawnow();
-            SNRData = obj.experiment.data.SNR;
-            if obj.settings.saveInt
-                IntData = obj.experiment.data.Integrate;
-                figure;scatter(real(IntData), imag(IntData));
+            drawnow();
+            SCData = obj.experiment.data.StateCalibration;
+            if obj.settings.setStateParams
+                obj.Set_state_params()
             end
         end
+
+        function Set_state_params(obj)
+             leftwell = mean(obj.experiment.measurements.StateCalibration.state1Data);
+             rightwell = mean(obj.experiment.measurements.StateCalibration.state2Data);
+
+             measLib = json.read(getpref('qlab', 'MeasurementLibraryFile'));
+             filters = fieldnames(measLib.filterDict);
+             for i=1:numel(filters)
+                 filt = measLib.filterDict.(filters{i});
+                if strcmp(filt.x__class__, 'ComplexStateComparator')
+                    measLib.filterDict.(filt.label).state1I = real(leftwell);
+                    measLib.filterDict.(filt.label).state1Q = imag(leftwell);
+                    measLib.filterDict.(filt.label).state2I = real(rightwell);
+                    measLib.filterDict.(filt.label).state2Q = imag(rightwell);
+                end
+             end
+             json.write(measLib, getpref('qlab', 'MeasurementLibraryFile'), 'indent', 2);
+             
+             expSettings = json.read(getpref('qlab', 'CurScripterFile'));
+             filters = fieldnames(expSettings.measurements);
+             for i=1:numel(filters)
+                if strcmp(expSettings.measurements.(filters{i}).filterType, 'ComplexStateComparator')
+                    expSettings.measurements.(filters{i}).state1I = real(leftwell);
+                    expSettings.measurements.(filters{i}).state1Q = imag(leftwell);
+                    expSettings.measurements.(filters{i}).state2I = real(rightwell);
+                    expSettings.measurements.(filters{i}).state2Q = imag(rightwell);
+%                         2+2;
+                end
+             end
+             json.write(expSettings, getpref('qlab', 'CurScripterFile'), 'indent', 2);
+        end
     end
+
 end

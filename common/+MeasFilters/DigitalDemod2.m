@@ -15,7 +15,7 @@
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-classdef DigitalDemod < MeasFilters.MeasFilter
+classdef DigitalDemod2 < MeasFilters.MeasFilter
 
     properties
         saveRecords
@@ -34,7 +34,7 @@ classdef DigitalDemod < MeasFilters.MeasFilter
     end
 
     methods
-        function obj = DigitalDemod(label, settings)
+        function obj = DigitalDemod2(label, settings)
             obj = obj@MeasFilters.MeasFilter(label, settings);
             obj.saved = false; %until we figure out a new data format then we don't save the raw streams
 
@@ -99,11 +99,6 @@ classdef DigitalDemod < MeasFilters.MeasFilter
             % efficiently compute data .* refSignal (with singleton dimension
             % expansion)
             prodSignal = bsxfun(@times, data, refSignal);
-            Sv = imag(refSignal);
-            Cv = real(refSignal);
-            Id = bsxfun(@times, real(data), Cv) - bsxfun(@times, imag(data),Sv);
-            Qd = bsxfun(@times, real(data), Sv) + bsxfun(@times, imag(data),Cv);
-            
 
             % We next want to low-pass filter the result, but if nbandwidth < 0.05, the
             % IIR filter will be unstable, so check if we need to decimate first.
@@ -121,8 +116,7 @@ classdef DigitalDemod < MeasFilters.MeasFilter
                 demodSignal = MeasFilters.polyDecimator(real(demodSignal), obj.decimFactor3) +1i*MeasFilters.polyDecimator(imag(demodSignal), obj.decimFactor3);
             end
 
-%             obj.latestData = demodSignal;
-            obj.latestData = complex(Id, Qd);
+            obj.latestData = demodSignal;
 
             %If we have a file to save to then do so
             if obj.saveRecords
