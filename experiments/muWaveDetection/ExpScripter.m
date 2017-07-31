@@ -1,5 +1,5 @@
 % timeDomain
-function ExpScripter(expName)
+function most_recent_data = ExpScripter(expName)
 
 exp = ExpManager();
 
@@ -50,5 +50,12 @@ end
 
 exp.init();
 exp.run();
+
+% Plot data and save figures
+
+most_recent_data = load_data('latest', 'amp');
+% print(strrep(exp.dataFileHandler.fileName, '.h5', ''), '-dpng')
+saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''))
+saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''), 'png')
 
 end
