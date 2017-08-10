@@ -121,8 +121,8 @@ classdef DigitalDemod < MeasFilters.MeasFilter
                 demodSignal = MeasFilters.polyDecimator(real(demodSignal), obj.decimFactor3) +1i*MeasFilters.polyDecimator(imag(demodSignal), obj.decimFactor3);
             end
 
-%             obj.latestData = demodSignal;
-            obj.latestData = complex(Id, Qd);
+            obj.latestData = demodSignal;
+%             obj.latestData = complex(Id, Qd);
 
             %If we have a file to save to then do so
             if obj.saveRecords

@@ -1,15 +1,17 @@
-% timeDomain
-function most_recent_data = ExpScripter(expName, plotMode)
-
-if nargin < 2
-    plotMode='amp';
-end
-
+function ExpScripter3(expName, varargin)
+%ExpScripter with optional inputs:
+%expSettings: structure as loaded from DefaultExpSetting.json. Overwritten
+%if passed as input
+tic;
 exp = ExpManager();
 
-deviceName = getpref('qlab', 'deviceName');
+% deviceName = getpref('qlab', 'deviceName');
+deviceName = 'CSFQW7B3';
 exp.dataFileHandler = HDF5DataHandler(DataNamer.get_data_filename(deviceName, expName));
 
+metaFile = varargin{1};
+metaInfo = json.read(metaFile);
+%expSettings = json.read(metaFile);
 expSettings = json.read(getpref('qlab', 'CurScripterFile'));
 exp.dataFileHeader = expSettings;
 exp.CWMode = expSettings.CWMode;
@@ -55,11 +57,5 @@ end
 exp.init();
 exp.run();
 
-% Plot data and save figures
-
-most_recent_data = load_data('latest', plotMode);
-% print(strrep(exp.dataFileHandler.fileName, '.h5', ''), '-dpng')
-saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''))
-saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''), 'png')
-
+toc;
 end

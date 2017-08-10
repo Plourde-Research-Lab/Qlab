@@ -5,22 +5,21 @@ function continuousWave()
 % usage: >> continuousWave()
 %
 aps = APS();
-ag = deviceDrivers.AgilentN5183A();
-% ag = deviceDrivers.AgilentE8257D();
+% ag = deviceDrivers.AgilentN5183A();
+ag = deviceDrivers.AgilentE8257D();
 
 instrLibrary = json.read(getpref('qlab', 'CurScripterFile'));
-instrSettings = instrLibrary.instruments.('Scope');
-scope = InstrumentFactory('Scope', instrSettings);
-scope.setAll(instrSettings);
+% instrSettings = instrLibrary.instruments.('Scope');
+% scope = InstrumentFactory('Scope', instrSettings);
+% scope.setAll(instrSettings);
 
-scope
 
-channelA = 3;
-channelB = 4;
+channelA = 1;
+channelB = 2;
 
-ag.connect(30);
-% aps.connect('A6001ixV');
-aps.connect('A6001nBT');
+ag.connect(6);
+aps.connect('A6001ixV');
+% aps.connect('A6001nBT');
 aps.stop();
 
 % create the wave form
@@ -53,15 +52,10 @@ ag.power = 13.0;
 ag.output = 1;
 ag.pulse = 0;
 
-scope.acquire();
-
 % wait for user input
 % headbutt keyboard
 pause;
 
-scope.stop();
-
-figure;plot(scope.transfer_waveform(1));
 
 % shut things down
 ag.output = 0;
@@ -71,6 +65,5 @@ aps.stop();
 aps.disconnect();
 delete(aps);
 
-scope.disconnect;scope.delete;
 
 end

@@ -9,7 +9,7 @@ function data = load_data(varargin)
 %   path = path to filename to load; special argument 'latest' loads the
 %   last data set taken
 %   plotMode = 'real', 'imag', 'amp', 'phase', 'real/imag', 'amp/phase',
-%        'quad', or '' (no plot)
+%        'quad', 'IQ', or '' (no plot)
 if nargin == 2
     [fullpath, plotMode] = varargin{:};
     if strcmp(fullpath, 'latest')
@@ -107,6 +107,7 @@ plotMap.phase = struct('label','Phase (degrees)', 'func', @(x) (180/pi)*angle(x)
 plotMap.real = struct('label','Real Quad.', 'func', @real);
 plotMap.imag = struct('label','Imag. Quad.', 'func', @imag);
 plotMap.prob = struct('label','Switching Probability', 'func', @real);
+plotMap.IQ = struct('label', 'Quadrature');
 
 switch plotMode
     case 'real'
@@ -133,6 +134,9 @@ switch plotMode
     case 'prob'
         toPlot = {plotMap.prob};
         numRows = 1; numCols = 1;        
+    case 'IQ'
+        toPlot = {plotMap.IQ};
+        numRows = 1; numCols = 1;
     otherwise
         toPlot = {};
 end
@@ -146,9 +150,15 @@ if ~isempty(plotMode)
             axesH = subplot(numRows, numCols, ct, 'Parent', figH);
                 switch data.dimension{ii}
                     case 1
-                        plot(axesH, data.xpoints{ii}, toPlot{ct}.func(data.data{ii}),'.-');
-                        xlabel(axesH, data.xlabel{ii});
-                        ylabel(axesH, toPlot{ct}.label)
+                        if strcmp(plotMode, 'IQ')
+                            scatter(axesH, real(data.data{ii}), imag(data.data{ii}));
+                            xlabel(axesH, 'Real Quadrature');
+                            ylabel(axesH, 'Imag Quadrature');
+                        else
+                            plot(axesH, data.xpoints{ii}, toPlot{ct}.func(data.data{ii}),'.-');
+                            xlabel(axesH, data.xlabel{ii});
+                            ylabel(axesH, toPlot{ct}.label)
+                        end
                         title(sanitizedFileName);
                     case 2
                         imagesc(data.xpoints{ii}(1:size(data.data{ii},2)), data.ypoints{ii}(1:size(data.data{ii},1)), toPlot{ct}.func(data.data{ii}), 'Parent', axesH)

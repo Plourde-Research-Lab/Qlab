@@ -73,20 +73,5 @@ classdef RawStream < MeasFilters.MeasFilter
             accumulate(obj);
             notify(obj, 'DataReady');
         end
-        
-        function plot(obj, figH)
-            ax = subplot(2,1,1, 'Parent', figH);
-            hold(ax, 'off');
-            plot(ax, real(obj.latestData));
-            ax2 = subplot(2, 1, 2, 'Parent', figH);
-            hold(ax2, 'off');
-            plot(ax2, imag(obj.latestData));
-            %                 xlim(ax, [-50, 50]);
-            %                 ylim(ax, [-50, 50]);
-            %                 if obj.S
-            %                     viscircles(ax, [0, 0], obj.S);
-            %                 end
-            drawnow(); 
-        end
     end
 end
