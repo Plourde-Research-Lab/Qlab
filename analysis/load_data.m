@@ -161,9 +161,19 @@ if ~isempty(plotMode)
                         end
                         title(sanitizedFileName);
                     case 2
-                        imagesc(data.xpoints{ii}(1:size(data.data{ii},2)), data.ypoints{ii}(1:size(data.data{ii},1)), toPlot{ct}.func(data.data{ii}), 'Parent', axesH)
-                        xlabel(axesH, data.xlabel{ii});
-                        ylabel(axesH, data.ylabel{ii});
+                        if strcmp(plotMode, 'IQ')
+                           for i = 1:length(data.ypoints{1})
+                              hold(axesH, 'on');
+                              scatter(axesH, real(data.data{ii}(i,:)), imag(data.data{ii}(i,:)));
+                           end
+                              legend(num2str(data.ypoints{1}));
+                              xlabel(axesH, 'Real Quadrature');
+                              ylabel(axesH, 'Imag Quadrature');
+                        else
+                            imagesc(data.xpoints{ii}(1:size(data.data{ii},2)), data.ypoints{ii}(1:size(data.data{ii},1)), toPlot{ct}.func(data.data{ii}), 'Parent', axesH)
+                            xlabel(axesH, data.xlabel{ii});
+                            ylabel(axesH, data.ylabel{ii});
+                        end
                         title(sanitizedFileName);
                     otherwise
                         fprintf('Cannot plot for dimension = %d\n', data.dimension{ii});
