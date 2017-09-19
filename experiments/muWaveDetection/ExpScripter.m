@@ -57,9 +57,12 @@ exp.run();
 
 % Plot data and save figures
 
-most_recent_data = load_data('latest', plotMode);
+if ~strcmp(plotMode, 'None')
+    most_recent_data = load_data('latest', plotMode);
 % print(strrep(exp.dataFileHandler.fileName, '.h5', ''), '-dpng')
-saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''))
-saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''), 'png')
-
+    saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''))
+    saveas(gcf, strrep(exp.dataFileHandler.fileName, '.h5', ''), 'png')
+else
+    most_recent_data = load_data('latest');
+end
 end
