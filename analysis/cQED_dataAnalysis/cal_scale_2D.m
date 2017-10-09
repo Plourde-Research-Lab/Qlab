@@ -1,7 +1,7 @@
 function cal_scale_2D(nbrRepeats)
 
 if ~exist('nbrRepeats', 'var')
-    nbrRepeats = 2;
+    nbrRepeats = 1;
 end
 h = gcf;
 % grab the image handle

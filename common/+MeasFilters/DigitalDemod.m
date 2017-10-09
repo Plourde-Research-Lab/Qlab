@@ -40,8 +40,8 @@ classdef DigitalDemod < MeasFilters.MeasFilter
 
             obj.saveRecords = settings.saveRecords;
             if obj.saveRecords
-                obj.fileHandleReal = fopen([settings.recordsFilePath, '.real'], 'wb');
-                obj.fileHandleImag = fopen([settings.recordsFilePath, '.imag'], 'wb');
+                obj.fileHandleReal = fopen(fullfile(getpref('qlab', 'recordLocation'), [settings.recordsFilePath, '.real']), 'wb');
+                obj.fileHandleImag = fopen(fullfile(getpref('qlab', 'recordLocation'), [settings.recordsFilePath, '.imag']), 'wb');
             end
 
             obj.IFfreq = settings.IFfreq;
@@ -52,7 +52,7 @@ classdef DigitalDemod < MeasFilters.MeasFilter
             obj.nBandwidth= obj.bandwidth/(obj.samplingRate/2);
             obj.nIFfreq = obj.IFfreq/(obj.samplingRate/2);
 
-            obj.decimFactor1 = settings.decimFactor1;
+            obj.decimFactor1 = settings.decimFactor1; 
             if ( obj.decimFactor1 > floor(0.45/(2*obj.nIFfreq + obj.nBandwidth/2)) )
                 warning('First stage decimation factor is too high and 2*omega signal will alias.');
             end

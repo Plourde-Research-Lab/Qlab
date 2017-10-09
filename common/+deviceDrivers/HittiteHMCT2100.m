@@ -47,6 +47,9 @@ classdef (Sealed) HittiteHMCT2100 < deviceDrivers.lib.uWSource & deviceDrivers.l
         end
         function obj = set.output(obj, value)
             obj.write(['output ' obj.cast_boolean(value)]);
+%             if  obj.cast_boolean(value)
+%                 pause(5);
+%             end
         end
         % set phase in degrees
 %         function obj = set.phase(obj, ~)

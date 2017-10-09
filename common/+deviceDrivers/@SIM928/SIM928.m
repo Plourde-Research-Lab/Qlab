@@ -1,4 +1,4 @@
- % Module Name : SIM928.m
+% Module Name : SIM928.m
 %
 % Author/Date : Matthew Ware 04/14/14
 %
@@ -21,61 +21,69 @@
 % WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 % See the License for the specific language governing permissions and
 % limitations under the License.
-% select which range, 2 = 10 mV, 3 = 100 mV, 4 = 1V, 5 = 10V,6 = 30V
 classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.lib.GPIB
     properties (Access = public)
-        output
-        channel = 1;
-        value
-        frequency  	% defined in deviceDrivers.lib.uWSource
-        power      	% defined in deviceDrivers.lib.uWSource
-        phase      	% defined in deviceDrivers.lib.uWSource
-        mod        	% defined in deviceDrivers.lib.uWSource
-        alc        	% defined in deviceDrivers.lib.uWSource
-        pulse      	% defined in deviceDrivers.lib.uWSource
-        pulseSource	% defined in deviceDrivers.lib.uWSource
     end % end device properties
     methods
         function obj = SIM928()
+            
         end
         function reset(obj)
             obj.write('SRST');
             obj.write('*CLS');
         end
         
+        function setAll(obj, settings)
+            channels = {1,2,3};
+            for ch = channels
+                name = ['ch' num2str(ch{1}) 'Value'];
+                if isfield(settings, name)
+                    obj.setValue(ch{1}, settings.(name));
+                    settings = rmfield(settings, name);
+                end
+            end
+
+            fields = fieldnames(settings);
+            for j = 1:length(fields);
+                name = fields{j};
+                if ismember(name, methods(obj))
+                    args = eval(settings.(name));
+                    feval(name, obj, args{:});
+                elseif ismember(name, properties(obj))
+                    obj.(name) = settings.(name);
+                end
+            end
+        end
+        
         % Instrument parameter accessors
         % getters
-        function val = get.output(obj)
-            val = str2double(obj.query(['SNDT ', num2str(obj.channel), ',"EXON?"'])); % convert to GHz
+        function val = getOutput(obj, channel)
+            val = str2double(obj.query(['SNDT ', num2str(channel), ',"EXON?"'])); % convert to GHz
         end
-        function val = get.channel(obj)
-            val = obj.channel;
-        end
-        function val = get.value(obj)
-            cmd = sprintf('SNDT %d,"VOLT?"',obj.channel);
+
+        function val = getValue(obj, channel)
+            cmd = sprintf('SNDT %d,"VOLT?"',channel);
             val = obj.query(cmd);
         end
         % setters
         
-        function obj = set.channel(obj, value)
-           obj.channel = value; 
-        end
-        function obj = set.value(obj, value)
-            cmd = sprintf('SNDT %d,"VOLT %d"', obj.channel, value);
+        function obj = setValue(obj, channel, value)
+            cmd = sprintf('SNDT %d,"VOLT %d"', channel, value);
             obj.write(cmd);
         end
-        function obj = set.output(obj, value)
-
-            %Zero voltage
-            if not (value)
-                cmd = sprintf('SNDT %d,"VOLT 0"',obj.channel); 
-                obj.write(cmd);
-            end
-
-            if isnumeric(value)
-                value = num2str(value);
-            end
-            
+        
+%         function obj = set.output(obj, channel, value)
+% 
+%             Zero voltage
+%             if not (value)
+%                 cmd = sprintf('SNDT %d,"VOLT 0"',channel); 
+%                 obj.write(cmd);
+%             end
+% 
+%             if isnumeric(value)
+%                 value = num2str(value);
+%             end
+%             
 %             Comment out for now, just set to 0
 %             % Validate input
 %             checkMapObj = containers.Map({'on','1','true', 'off','0', 'false'},...
@@ -85,6 +93,6 @@ classdef (Sealed) SIM928 < deviceDrivers.lib.deviceDriverBase & deviceDrivers.li
 %             end            
 %            cmd = ['SNDT ' num2str(obj.channel) ',"OP' checkMapObj(num2str(value)) '"'];
 %            obj.write(cmd);
-        end
+%         end
     end
 end

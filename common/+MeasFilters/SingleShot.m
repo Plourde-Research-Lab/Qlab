@@ -295,8 +295,10 @@ classdef SingleShot < MeasFilters.MeasFilter
                 legend(axes2, {'Ground', 'Ground Gaussian Fit', 'Excited', 'Excited Gaussian Fit'})
                 text(0.1, 0.75, sprintf('Fidelity: %.1f%%',100*obj.pdfData.maxFidelity_Q), 'Units', 'normalized', 'FontSize', 14, 'Parent', axes2)
                 drawnow();
-%                 figure;scatter(real(obj.groundData), imag(obj.groundData))
-%                 hold all;scatter(real(obj.excitedData), imag(obj.excitedData))
+%                 gd = mean(obj.groundData, 1);
+%                 ed = mean(obj.excitedData, 1);
+%                 figure;scatter(real(gd), imag(gd))
+%                 hold all;scatter(real(ed), imag(ed))
             end
         end
 

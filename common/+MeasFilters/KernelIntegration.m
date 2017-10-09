@@ -19,6 +19,10 @@ classdef KernelIntegration < MeasFilters.MeasFilter
     properties
         kernel
         bias
+        saveRecords
+        fileHandleReal
+        fileHandleImag
+        headerWritten = false;
     end
     
     methods
@@ -27,6 +31,12 @@ classdef KernelIntegration < MeasFilters.MeasFilter
             %decode kernel
             %decode base64 then cast to byte array and then to float64
             %array
+            obj.saveRecords = settings.saveRecords;
+            if obj.saveRecords
+                obj.fileHandleReal = fopen(fullfile(getpref('qlab', 'recordLocation'), [settings.recordsFilePath, '.real']), 'wb');
+                obj.fileHandleImag = fopen(fullfile(getpref('qlab', 'recordLocation'), [settings.recordsFilePath, '.imag']), 'wb');
+            end
+            
             tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.kernel)), 'uint8');
             tmp = typecast(tmp, 'double');
             obj.kernel = tmp(1:2:end) + 1j*tmp(2:2:end);
@@ -42,9 +52,34 @@ classdef KernelIntegration < MeasFilters.MeasFilter
 %             obj.latestData = sum(bsxfun(@times, src.latestData, conj(obj.kernel))) + obj.bias;
             obj.latestData = MeasFilters.dotFirstDim(src.latestData, single(obj.kernel));
             obj.latestData = obj.latestData + obj.bias;
-             
+            
+            %If we have a file to save to then do so
+            if obj.saveRecords
+                if ~obj.headerWritten
+                    %Write the first three dimensions of the signal:
+                    %recordLength, numWaveforms, numSegments
+                    sizes = size(obj.latestData);
+                    if length(sizes) == 2
+                        sizes = [sizes(1), 1, sizes(2)];
+                    end
+                    fwrite(obj.fileHandleReal, sizes(1:3), 'int32');
+                    fwrite(obj.fileHandleImag, sizes(1:3), 'int32');
+                    obj.headerWritten = true;
+                end
+
+                fwrite(obj.fileHandleReal, real(obj.latestData), 'single');
+                fwrite(obj.fileHandleImag, imag(obj.latestData), 'single');
+            end
+            
             accumulate(obj);
             notify(obj, 'DataReady');
+        end
+        
+        function delete(obj)
+            if obj.saveRecords
+                fclose(obj.fileHandleReal);
+                fclose(obj.fileHandleImag);
+            end
         end
     end
 end

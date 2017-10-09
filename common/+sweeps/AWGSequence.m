@@ -61,18 +61,18 @@ classdef AWGSequence < sweeps.Sweep
                 fileName = fullfile(getpref('qlab', 'awgDir'), fileName);
                 display(fileName)
                 assert(logical(exist(fileName, 'file')), 'AWGSequence ERROR: Could not find file %s\n', fileName)
-                obj.AWGs.(curAWGName).load_sequence(fileName);
-                %Load the new file
-%                 wasRunning = false;
-%                 if obj.AWGs.(curAWGName).isRunning
-%                     wasRunning = true;
-%                     obj.AWGs.(curAWGName).stop()
-%                 end
-%                 obj.AWGs.(curAWGName).loadConfig(fileName);
-%                 if wasRunning
-%                     obj.AWGs.(curAWGName).run()
-%                     pause(0.1);
-%                 end
+%                 obj.AWGs.(curAWGName).load_sequence(fileName);
+%                 Load the new file
+                wasRunning = false;
+                if obj.AWGs.(curAWGName).isRunning
+                    wasRunning = true;
+                    obj.AWGs.(curAWGName).stop()
+                end
+                obj.AWGs.(curAWGName).loadConfig(fileName);
+                if wasRunning
+                    obj.AWGs.(curAWGName).run()
+                    pause(0.1);
+                end
             end
         end
     end

@@ -34,8 +34,8 @@ classdef RawStream < MeasFilters.MeasFilter
             
             obj.saveRecords = settings.saveRecords;
             if obj.saveRecords
-                obj.fileHandleReal = fopen([settings.recordsFilePath, '.real'], 'wb');
-                obj.fileHandleImag = fopen([settings.recordsFilePath, '.imag'], 'wb');
+                obj.fileHandleReal = fopen(fullfile(getpref('qlab', 'recordLocation'), [settings.recordsFilePath, '.real']), 'wb');
+                obj.fileHandleImag = fopen(fullfile(getpref('qlab', 'recordLocation'), [settings.recordsFilePath, '.imag']), 'wb');
             end
             
         end

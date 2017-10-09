@@ -142,6 +142,9 @@ classdef MeasFilter < handle
                 case 'quad'
                     toPlot = {plotMap.abs, plotMap.phase, plotMap.real, plotMap.imag};
                     numRows = 2; numCols = 2;
+                case 'amp'
+                    toPlot = {plotMap.abs};
+                    numRows=1; numCols = 1;
                 otherwise
                     toPlot = {};
             end

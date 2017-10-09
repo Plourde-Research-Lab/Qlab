@@ -65,4 +65,5 @@ if ~strcmp(plotMode, 'None')
 else
     most_recent_data = load_data('latest');
 end
+
 end

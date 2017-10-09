@@ -19,33 +19,31 @@
 classdef ComplexStateComparator < MeasFilters.MeasFilter
 
     properties
-        leftwell = 0 + 0j
-        rightwell = 0 + 0j
-        kernel
+        integrationTime = -1
+        threshold = 0
     end
 
     methods
-        function obj = ComplexStateComparator(label, settings)
+        function obj = StateComparator(label, settings)
             obj = obj@MeasFilters.MeasFilter(label,settings);
-            obj.leftwell = complex(settings.state1I, settings.state1Q);
-            obj.rightwell = complex(settings.state2I, settings.state2Q);
+            obj.integrationTime = settings.integrationTime;
+            obj.numCals = 1;
         end
 
         function apply(obj, src, ~)
-             data = src.latestData;
+            data = src.latestData;
             
-             sumdata = sum(data(:,:,:,:), 1);
-%             obj.latestData = double(bsxfun(@hypot, data, obj.leftwell) <= bsxfun(@hypot, data, obj.rightwell));
-
-            dist1 = abs(bsxfun(@minus, sumdata, obj.leftwell));
-            dist2 = abs(bsxfun(@minus, sumdata, obj.rightwell));
-%             fprintf('L: %f R: %f', dist1, dist2);
-%             obj.latestData = double(dist1 < dist2);
-            obj.latestData = bsxfun(@le, dist2, dist1);
-%             obj.latestData = dist1;
+            % integrate and threshold
+            if obj.integrationTime < 0
+                obj.integrationTime = size(data,1);
+            end
+            sumdata = sum(data(1:obj.integrationTime,:,:,:), 1);
+            % better to cast to int32, but need to update the data file handler to support it
+%             obj.latestData = double(real(sumdata) > obj.threshold) + 1j*double(imag(sumdata) > obj.threshold);
+            obj.latestData = double(abs(sumdata) > obj.threshold);
             accumulate(obj);
             notify(obj, 'DataReady');
-            
+
         end
 
     end

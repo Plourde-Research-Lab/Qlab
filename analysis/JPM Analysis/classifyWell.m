@@ -19,11 +19,12 @@ function [idx] = classifyWell( data )
     well_separation = abs(dist(center1, center2));
     well_amp = mean([abs(center1), abs(center2)]);
     
-    fprintf('Well 1 \t I = %f \t Q = %f \t Amp = %f\n', C(1,1), C(1,2), abs(center1));
-    fprintf('Well 2 \t I = %f \t Q = %f \t Amp = %f\n', C(2,1), C(2,2), abs(center2));    
+    fprintf('Well 1 \t I = %f \t Q = %f \t Amp = %f \t %f Accurate \n', C(1,1), C(1,2), abs(center1), length(X(idx==1,1)));
+    fprintf('Well 2 \t I = %f \t Q = %f \t Amp = %f \t %f Accurate \n', C(2,1), C(2,2), abs(center2), length(X(idx==2,1)));    
     
     fprintf('Separation/Signal = %f\n', well_separation/well_amp);
     
+    % Create ideal index array    
     figure;
     hold on;
     plot(X(idx==1,1),X(idx==1,2),'r.');
